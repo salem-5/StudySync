@@ -76,3 +76,42 @@ Task Task::fromJson(const boost::json::object &obj) {
 
     return Task(id,title,tag,isCompleted,ownerId,assignedToId,groupId);
 }
+
+
+StudyGroup::StudyGroup(int id, const std::string& name) : id(id), name(name) {}
+int StudyGroup::getId() const { return id; }
+std::string StudyGroup::getName() const { return name; }
+std::vector<int> StudyGroup::getMemberIds() const { return memberIds; }
+
+void StudyGroup::setId(int id) { this->id = id; }
+void StudyGroup::setName(const std::string& name) { this->name = name; }
+void StudyGroup::setMemberIds(const std::vector<int>& memberIds) { this->memberIds = memberIds; }
+void StudyGroup::addMemberId(int memberId) { this->memberIds.push_back(memberId); }
+
+boost::json::object StudyGroup::toJson() const {
+    boost::json::array membersArray;
+    for (int memberId : memberIds) {
+        membersArray.push_back(memberId);
+    }
+    boost::json::object jsonObject = {
+        { "id", id },
+        { "name", name },
+        { "memberIds", membersArray }
+    };
+    return jsonObject;
+}
+
+StudyGroup StudyGroup::fromJson(const boost::json::object& obj) {
+    int id = obj.at("id").as_int64();
+    std::string name = obj.at("name").as_string().c_str();
+
+    StudyGroup group(id, name);
+
+    boost::json::array membersArray = obj.at("memberIds").as_array();
+    std::vector<int> parsedMemberIds;
+    for (int i = 0; i < membersArray.size(); i++)
+        parsedMemberIds.push_back(membersArray[i].as_int64());
+    group.setMemberIds(parsedMemberIds);
+
+    return group;
+}
