@@ -39,6 +39,7 @@ private:
 
 public:
     Task(int id, const std::string& title, const std::string& tag, int ownerId);
+    Task(int id, const std::string& title, const std::string& tag, bool isCompleted, int ownerId, int assignedToId, int groupId);
 
     int getId() const;
     std::string getTitle() const;
