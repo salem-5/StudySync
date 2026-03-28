@@ -27,5 +27,5 @@ public:
     static void mockRequestUsername(int userId);
     static void mockCreateGroup(const std::string& groupName);
     static void mockSendMessage(int groupId, const std::string& text);
-    static void mockCreateTask(int groupId, const std::string& title, const std::string& category);
+    static void mockCreateTask(int groupId, const std::string& title, const std::string& category, int assigneeId);
 };
