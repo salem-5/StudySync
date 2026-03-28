@@ -118,11 +118,32 @@ Task Task::fromJson(const boost::json::object &obj) {
 }
 
 
+Message::Message(int userId, const std::string& text) : userId(userId), text(text) {}
+
+int Message::getUserId() const { return userId; }
+std::string Message::getText() const { return text; }
+
+void Message::setUserId(int userId) { this->userId = userId; }
+void Message::setText(const std::string& text) { this->text = text; }
+boost::json::object Message::toJson() const {
+    return {
+    { "userId", userId },
+    { "text", text }
+    };
+}
+
+Message Message::fromJson(const boost::json::object& obj) {
+    int userId = obj.at("userId").as_int64();
+    std::string text = obj.at("text").as_string().c_str();
+    return Message(userId, text);
+}
+
 StudyGroup::StudyGroup(int id, const std::string& name) : id(id), name(name) {}
 int StudyGroup::getId() const { return id; }
 std::string StudyGroup::getName() const { return name; }
 std::vector<int> StudyGroup::getMemberIds() const { return memberIds; }
 std::vector<int> StudyGroup::getTaskIds() const { return taskIds; }
+std::vector<Message> StudyGroup::getMessages() const { return messages; }
 
 void StudyGroup::setId(int id) { this->id = id; }
 void StudyGroup::setName(const std::string& name) { this->name = name; }
@@ -130,6 +151,8 @@ void StudyGroup::setMemberIds(const std::vector<int>& memberIds) { this->memberI
 void StudyGroup::addMemberId(int memberId) { this->memberIds.push_back(memberId); }
 void StudyGroup::setTaskIds(const std::vector<int>& taskIds) { this->taskIds = taskIds; }
 void StudyGroup::addTaskId(int taskId) { this->taskIds.push_back(taskId); }
+void StudyGroup::setMessages(const std::vector<Message>& messages) { this->messages = messages; }
+void StudyGroup::addMessage(const Message& message) { this->messages.push_back(message); }
 
 boost::json::object StudyGroup::toJson() const {
     boost::json::array membersArray;
@@ -141,11 +164,17 @@ boost::json::object StudyGroup::toJson() const {
         tasksArray.push_back(taskId);
     }
 
+    boost::json::array messagesArray;
+    for (const Message& msg : messages) {
+        messagesArray.push_back(msg.toJson());
+    }
+
     boost::json::object jsonObject = {
         { "id", id },
         { "name", name },
         { "memberIds", membersArray },
-        { "taskIds", tasksArray }
+        { "taskIds", tasksArray },
+        { "messages", messagesArray }
     };
     return jsonObject;
 }
@@ -166,6 +195,12 @@ StudyGroup StudyGroup::fromJson(const boost::json::object& obj) {
         boost::json::array tasksArray = obj.at("taskIds").as_array();
         for (int i = 0; i < tasksArray.size(); i++)
             group.addTaskId(tasksArray[i].as_int64());
+    }
+
+    if (obj.contains("messages")) {
+        boost::json::array messagesArray = obj.at("messages").as_array();
+        for (int i = 0; i < messagesArray.size(); i++)
+            group.addMessage(Message::fromJson(messagesArray[i].as_object()));
     }
 
     return group;

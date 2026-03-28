@@ -74,12 +74,31 @@ public:
     static Task fromJson(const boost::json::object& obj);
 };
 
+class Message {
+private:
+    int userId;
+    std::string text;
+
+public:
+    Message(int userId, const std::string& text);
+
+    int getUserId() const;
+    std::string getText() const;
+
+    void setUserId(int userId);
+    void setText(const std::string& text);
+
+    boost::json::object toJson() const;
+    static Message fromJson(const boost::json::object& obj);
+};
+
 class StudyGroup {
 private:
     int id;
     std::string name;
     std::vector<int> memberIds;
     std::vector<int> taskIds;
+    std::vector<Message> messages;
 
 public:
     StudyGroup(int id, const std::string& name);
@@ -88,6 +107,7 @@ public:
     std::string getName() const;
     std::vector<int> getMemberIds() const;
     std::vector<int> getTaskIds() const;
+    std::vector<Message> getMessages() const;
 
     void setId(int id);
     void setName(const std::string& name);
@@ -95,6 +115,8 @@ public:
     void addMemberId(int memberId);
     void setTaskIds(const std::vector<int>& taskIds);
     void addTaskId(int taskId);
+    void setMessages(const std::vector<Message>& messages);
+    void addMessage(const Message& message);
 
     boost::json::object toJson() const;
     static StudyGroup fromJson(const boost::json::object& obj);
