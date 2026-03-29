@@ -75,6 +75,11 @@ void AbstractChatPage::addMessage(const QString& senderName, const QString& text
         bubbleLayout->addWidget(innerBubble);
     }
     chatLayout->addWidget(bubbleWidget);
+    QTimer::singleShot(0, this, [this]() {
+        scrollArea->widget()->adjustSize();
+        QScrollBar* bar = scrollArea->verticalScrollBar();
+        bar->setValue(bar->maximum());
+    });
 }
 
 void AbstractChatPage::onSendClicked() {
