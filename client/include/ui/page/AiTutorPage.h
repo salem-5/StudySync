@@ -1,14 +1,11 @@
 #pragma once
+#include "AbstractChatPage.h"
 
-#include <QLabel>
-#include <QLineEdit>
-#include <QTextEdit>
-#include <QComboBox>
-#include "DataStructures.h"
-
-
-class AiTutorPage : public QWidget {
+class AiTutorPage : public AbstractChatPage {
     Q_OBJECT
 public:
     AiTutorPage(QWidget* parent = nullptr);
+
+protected:
+    void onSendMessageRequested(const QString& text) override;
 };

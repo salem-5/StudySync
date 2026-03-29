@@ -1,13 +1,10 @@
 #pragma once
 
-#include <QWidget>
-#include <QVBoxLayout>
-#include <QGroupBox>
-#include <QTextEdit>
-#include <QLineEdit>
+#include "AbstractChatPage.h"
 #include "DataStructures.h"
+#include <QLabel>
 
-class GroupChatPage : public QWidget {
+class GroupChatPage : public AbstractChatPage {
     Q_OBJECT
 public:
     GroupChatPage(QWidget* parent = nullptr);
@@ -16,9 +13,10 @@ public:
     signals:
         void backToGroupsRequested();
 
+protected:
+    void onSendMessageRequested(const QString& text) override;
+
 private:
-    QGroupBox* group;
-    QTextEdit* chatHistory;
-    QLineEdit* chatInput;
+    QLabel* groupTitleLabel;
     int currentGroupId;
 };

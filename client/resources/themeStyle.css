@@ -1,5 +1,3 @@
-
-
 /*
  * SPDX-FileCopyrightText: 2022 JoeGaming
  * SPDX-FileCopyrightText: 2022 Witali Hirsch
@@ -14,6 +12,12 @@ QFrame[cssClass="card"] {
 QFrame[cssClass="card"]:hover {
     background-color: rgba(255, 255, 255, 16);
     border: 1px solid rgba(255, 255, 255, 15);
+}
+
+QLabel#senderNameLabel {
+    font-weight: bold;
+    color: #60cdff;
+    font-size: 10px;
 }
 
 /*MAIN*/
