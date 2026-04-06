@@ -15,6 +15,8 @@ public:
     void refreshPinnedGroups();
 private:
     QVBoxLayout* pinnedGroupsLayout;
+private slots:
+    void onStartFocusClicked();
 signals:
     void startFocusRequested();
     void openGroupChatRequested(int groupId);

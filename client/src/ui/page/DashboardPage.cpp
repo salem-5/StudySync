@@ -25,7 +25,7 @@ DashboardPage::DashboardPage(QWidget* parent) : QWidget(parent) {
     QLabel* wSub = new QLabel(LanguageManager::tr("dashboard.welcome_back_prefix") + username + "!\n" + LanguageManager::tr("dashboard.welcome_back_suffix"));
 
     QPushButton* wBtn = new QPushButton(LanguageManager::tr("dashboard.start_focus"));
-    connect(wBtn, &QPushButton::clicked, this, &DashboardPage::startFocusRequested);
+    connect(wBtn, &QPushButton::clicked, this, &DashboardPage::onStartFocusClicked);
     wLayout->addWidget(wSub);
     wLayout->addWidget(wBtn);
 
@@ -74,4 +74,8 @@ void DashboardPage::refreshPinnedGroups() {
         pinnedGroupsLayout->addWidget(pinnedCard);
     }
     pinnedGroupsLayout->addStretch();
+}
+
+void DashboardPage::onStartFocusClicked() {
+    emit startFocusRequested();
 }
