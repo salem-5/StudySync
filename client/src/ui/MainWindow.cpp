@@ -188,9 +188,9 @@ void MainWindow::openGroupTasks(int groupId) {
 }
 
 void MainWindow::startFocusFromDashboard() {
-    btnDashboard->setChecked(true);
+    btnDashboard->setChecked(false);
     btnFocus->setChecked(true);
-    stackedWidget->setCurrentIndex(2);
+    stackedWidget->setCurrentIndex(1);
     topbarTitle->setText(LanguageManager::tr("nav.focus_session"));
 }
 
