@@ -51,4 +51,7 @@ private slots:
     void navigateBackToGroups();
     void openCreateTaskDialog();
     void handleNewTask(Task task);
+
+signals:
+    void tasksChanged();
 };

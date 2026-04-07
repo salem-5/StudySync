@@ -13,8 +13,8 @@ class CreateTaskDialog : public QDialog {
 private:
     QLineEdit* titleInput;
     QLineEdit* tagInput;
-    QLineEdit* assignedToInput;
-    QLineEdit* groupIdInput;
+    QComboBox* assigneeCombo;
+    QComboBox* groupCombo;
     QCheckBox* completedCheck;
 
     QPushButton* btnCreate;

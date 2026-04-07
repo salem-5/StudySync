@@ -27,6 +27,7 @@ public:
 
 private slots:
     void updateTimer();
+    void updateButtons();
     void startTimer();
     void pauseTimer();
     void resetTimer();

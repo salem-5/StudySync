@@ -1,27 +1,52 @@
 #include "ui/widget/CreateTaskDialog.h"
 #include "LanguageManager.h"
+#include "ui/ClientState.h"
+#include "ui/page/DashboardPage.h"
 
 CreateTaskDialog::CreateTaskDialog(QWidget* parent)
     : QDialog(parent) {
 
     setWindowTitle(LanguageManager::tr("task.create"));
-    resize(300, 250);
+    resize(350, 250);
 
     QFormLayout* layout = new QFormLayout(this);
 
     titleInput = new QLineEdit(this);
     tagInput = new QLineEdit(this);
-    assignedToInput = new QLineEdit(this);
-    groupIdInput = new QLineEdit(this);
+
+    groupCombo = new QComboBox(this);
+    assigneeCombo = new QComboBox(this);
+
     completedCheck = new QCheckBox(LanguageManager::tr("task.completed"), this);
 
     btnCreate = new QPushButton(LanguageManager::tr("action.create"), this);
     btnCancel = new QPushButton(LanguageManager::tr("action.cancel"), this);
 
+    for (const auto& group : ClientState::getStudyGroups()) {
+        groupCombo->addItem(QString::fromStdString(group.getName()), group.getId());
+    }
+
+    auto updateAssignees = [this]() {
+        assigneeCombo->clear();
+        int currentGroupId = groupCombo->currentData().toInt();
+        const StudyGroup* group = ClientState::getGroupById(currentGroupId);
+        if (group) {
+            for (int mId : group->getMemberIds()) {
+                QString name = QString::fromStdString(ClientState::getUsername(mId));
+                assigneeCombo->addItem(name, mId);
+            }
+        }
+    };
+    connect(groupCombo, &QComboBox::currentIndexChanged, this, updateAssignees);
+    if (groupCombo->count() > 0) {
+        groupCombo->setCurrentIndex(0);
+        updateAssignees();
+    }
+
     layout->addRow(LanguageManager::tr("task.form.title"), titleInput);
     layout->addRow(LanguageManager::tr("task.form.tag"), tagInput);
-    layout->addRow(LanguageManager::tr("task.form.assigned_to_id"), assignedToInput);
-    layout->addRow(LanguageManager::tr("task.form.group_id"), groupIdInput);
+    layout->addRow("Group:", groupCombo);
+    layout->addRow("Assignee:", assigneeCombo);
     layout->addRow(completedCheck);
     layout->addRow(btnCreate, btnCancel);
 
@@ -31,17 +56,16 @@ CreateTaskDialog::CreateTaskDialog(QWidget* parent)
 
 void CreateTaskDialog::handleCreate() {
     int id = rand();
-
     Task task(
         id,
         titleInput->text().toStdString(),
         tagInput->text().toStdString(),
         completedCheck->isChecked(),
         1,
-        assignedToInput->text().toInt(),
-        groupIdInput->text().toInt()
+        assigneeCombo->currentData().toInt(),
+        groupCombo->currentData().toInt()
     );
 
     emit taskCreated(task);
-    accept(); 
+    accept();
 }

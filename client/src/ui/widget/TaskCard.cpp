@@ -1,14 +1,14 @@
 #include "ui/widget/TaskCard.h"
-#include <iostream>
+
 #include <QApplication>
 #include <QCheckBox>
-#include <QFile>
 #include <QVBoxLayout>
-
+#include <QHBoxLayout>
+#include <QPushButton>
 #include "ui/ClientState.h"
 #include "LanguageManager.h"
 
-TaskCard::TaskCard(const Task& task, const QString& groupName, QWidget* parent) : QFrame(parent) {
+TaskCard::TaskCard(const Task& task, const QString& groupName, QWidget* parent, bool hasEditButton) : QFrame(parent) {
     setAttribute(Qt::WA_StyledBackground, true);
     setProperty("cssClass", "card");
 
@@ -27,15 +27,22 @@ TaskCard::TaskCard(const Task& task, const QString& groupName, QWidget* parent) 
     QFont titleFont = title->font();
     titleFont.setPointSize(11);
 
-    QPalette titlePalette = title->palette();
-    if (task.getIsCompleted()) {
-        titleFont.setStrikeOut(true);
-        titlePalette.setColor(QPalette::WindowText, Qt::gray);
-    } else {
-        titleFont.setBold(true);
-    }
-    title->setFont(titleFont);
-    title->setPalette(titlePalette);
+    auto updateTitleStyle = [title, titleFont](bool isCompleted) {
+        QFont f = titleFont;
+        f.setStrikeOut(isCompleted);
+        f.setBold(!isCompleted);
+        title->setFont(f);
+        QPalette p = title->palette();
+        p.setColor(QPalette::WindowText, isCompleted ? Qt::gray : QApplication::palette().color(QPalette::WindowText));
+        title->setPalette(p);
+    };
+
+    updateTitleStyle(task.getIsCompleted());
+    connect(checkbox, &QCheckBox::toggled, this, [this, id = task.getId(), updateTitleStyle](bool checked) {
+        ClientState::mockToggleTaskCompletion(id, checked);
+        updateTitleStyle(checked);
+        emit taskStateChanged();
+    });
 
     int assigneeId = task.getAssignedToId();
     QString assigneeName = QString::fromStdString(ClientState::getUsername(assigneeId));
@@ -59,4 +66,12 @@ TaskCard::TaskCard(const Task& task, const QString& groupName, QWidget* parent) 
     layout->addWidget(checkbox);
     layout->addLayout(textLayout);
     layout->addStretch();
+    if (hasEditButton) {
+        QPushButton* btnEdit = new QPushButton(LanguageManager::tr("task.edit"));
+        btnEdit->setCursor(Qt::PointingHandCursor);
+        connect(btnEdit, &QPushButton::clicked, this, [this, id = task.getId()]() {
+            emit editRequested(id);
+        });
+        layout->addWidget(btnEdit);
+    }
 }

@@ -30,19 +30,9 @@ DashboardPage::DashboardPage(QWidget* parent) : QWidget(parent) {
     wLayout->addWidget(wBtn);
 
     QGroupBox* tasksGroup = new QGroupBox(LanguageManager::tr("dashboard.tasks_due"));
-    QVBoxLayout* tLayout = new QVBoxLayout(tasksGroup);
+    tasksLayout = new QVBoxLayout(tasksGroup);
 
-    const std::vector<Task>& allTasks = ClientState::getTasks();
-    for (const Task& task : allTasks) {
-        QString groupName = LanguageManager::tr("task.group.personal");
-        const StudyGroup* group = ClientState::getGroupById(task.getGroupId());
-        if (group) {
-            groupName = QString::fromStdString(group->getName());
-        }
-        tLayout->addWidget(new TaskCard(task, groupName));
-    }
-    tLayout->addStretch();
-
+    refreshTaskCards();
     leftLayout->addWidget(welcomeGroup);
     leftLayout->addWidget(tasksGroup);
 
@@ -55,6 +45,37 @@ DashboardPage::DashboardPage(QWidget* parent) : QWidget(parent) {
 
     layout->setStretch(0, 2);
     layout->setStretch(1, 1);
+}
+
+void DashboardPage::refreshTaskCards() {
+    QLayoutItem* item;
+    while ((item = tasksLayout->takeAt(0)) != nullptr) {
+        if (item->widget())
+            item->widget()->deleteLater(); //fix by chatgpt, to prevent deletion of object during qt event processing.
+        delete item;
+    }
+
+    const std::vector<Task>& allTasks = ClientState::getTasks();
+    const User* currentUser = ClientState::getUser();
+
+    for (const Task& task : allTasks) {
+        if (task.getIsCompleted() || (currentUser && task.getAssignedToId() != currentUser->getId())) {
+            continue;
+        }
+
+        QString groupName = LanguageManager::tr("task.group.personal");
+        const StudyGroup* group = ClientState::getGroupById(task.getGroupId());
+        if (group) {
+            groupName = QString::fromStdString(group->getName());
+        }
+
+        TaskCard* card = new TaskCard(task, groupName, nullptr, false);
+        connect(card, &TaskCard::taskStateChanged, this, &DashboardPage::refreshTaskCards);
+
+        tasksLayout->addWidget(card);
+    }
+
+    tasksLayout->addStretch();
 }
 
 void DashboardPage::refreshPinnedGroups() {
@@ -71,6 +92,11 @@ void DashboardPage::refreshPinnedGroups() {
         connect(pinnedCard, &GroupCard::openChatRequested, this, &DashboardPage::openGroupChatRequested);
         connect(pinnedCard, &GroupCard::openTasksRequested, this, &DashboardPage::openGroupTasksRequested);
         connect(pinnedCard, &GroupCard::pinStateChanged, this, &DashboardPage::refreshPinnedGroups);
+        connect(pinnedCard, &GroupCard::deleteRequested, this, [this](int id) {
+            ClientState::mockDeleteGroup(id);
+            refreshPinnedGroups();
+            refreshTaskCards();
+        });
         pinnedGroupsLayout->addWidget(pinnedCard);
     }
     pinnedGroupsLayout->addStretch();

@@ -46,5 +46,19 @@
   "ai.greeting": "Hello! I'm your AI Study Tutor. What subject are we tackling today?",
   "ai.response": "That's an interesting topic! Let's dive into the details.",
   "action.create": "Create",
-  "action.cancel": "Cancel"
+  "action.cancel": "Cancel",
+  "task.edit": "Edit",
+  "task.save": "Save Changes",
+  "task.add_member_placeholder": "Enter username...",
+  "group.manage_members": "Manage Members",
+  "group.invited_status": "Invited",
+  "group.cancel_invite": "Cancel Invite",
+  "group.members_title": "Group Members",
+  "group.add_member": "Add Member",
+  "group.remove_member": "Remove",
+  "group.no_members": "No members found.",
+  "group.delete": "Delete",
+
+  "task.delete": "Delete Task",
+  "dialog.cancel": "Cancel"
 }

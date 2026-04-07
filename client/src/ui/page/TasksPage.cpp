@@ -4,6 +4,8 @@
 #include <QVBoxLayout>
 #include <QPushButton>
 #include "LanguageManager.h"
+#include "ui/MainWindow.h"
+#include "ui/widget/EditTaskDialog.h"
 
 TasksPage::TasksPage(QWidget* parent) : QWidget(parent) {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
@@ -36,7 +38,20 @@ void TasksPage::loadTasks(int groupId) {
     const std::vector<Task>& allTasks = ClientState::getTasks();
     for (const Task& t : allTasks) {
         if (t.getGroupId() == groupId) {
-            tasksLayout->addWidget(new TaskCard(t, groupName));
+            TaskCard* card = new TaskCard(t, groupName);
+            connect(card, &TaskCard::taskStateChanged, this, [this]() {
+                emit tasksChanged();
+            });
+
+            connect(card, &TaskCard::editRequested, this, [this, t, groupId]() {
+                EditTaskDialog* dialog = new EditTaskDialog(t, this);
+                connect(dialog, &EditTaskDialog::taskUpdated, this, [this, groupId]() {
+                    loadTasks(groupId);
+                    emit tasksChanged();
+                });
+                dialog->exec();
+            });
+            tasksLayout->addWidget(card);
         }
     }
 

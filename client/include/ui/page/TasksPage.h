@@ -13,6 +13,7 @@ public:
 
 signals:
     void backToGroupsRequested();
+    void tasksChanged();
 private:
     QVBoxLayout* tasksLayout;
     QGroupBox* group;

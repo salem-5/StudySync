@@ -3,10 +3,12 @@
 #include <iostream>
 #include <QApplication>
 #include <QFile>
+#include <QScreen>
 
 #include "ui/ClientState.h"
 #include "ui/widget/CreateTaskDialog.h"
 #include "LanguageManager.h"
+#include "ui/widget/NotificationsDialog.h"
 
 void MainWindow::loadStylesheet(QApplication &app) {
     QFile styleFile(":/resources/themeStyle.css");
@@ -118,7 +120,15 @@ void MainWindow::setupTopbar() {
     layout->addStretch();
     createTaskBtn = new QPushButton(LanguageManager::tr("task.create"), this);
     layout->addWidget(createTaskBtn);
-    layout->addWidget(new QPushButton(LanguageManager::tr("nav.notifications"), this));
+    QPushButton* btnNotifications = new QPushButton(LanguageManager::tr("nav.notifications"), this);
+    layout->addWidget(btnNotifications);
+    connect(btnNotifications, &QPushButton::clicked, this, [this]() {
+    NotificationsDialog* dialog = new NotificationsDialog(this);
+    dialog->exec(); // Opens as a modal window
+
+    // Refresh the groups page when closed, in case they accepted an invite!
+    pageGroups->loadGroups();
+});
     layout->addWidget(new QLabel(ClientState::getUser()->getUsername().c_str(), this));
 }
 
@@ -135,6 +145,12 @@ void MainWindow::connectSignals() {
     connect(pageGroups, &GroupsPage::openGroupChatRequested, this, &MainWindow::openGroupChat);
     connect(pageGroupChat, &GroupChatPage::backToGroupsRequested, this, &MainWindow::navigateBackToGroups);
     connect(pageTasks, &TasksPage::backToGroupsRequested, this, &MainWindow::navigateBackToGroups);
+    connect(this, &MainWindow::tasksChanged, pageDashboard, &DashboardPage::refreshTaskCards);
+    connect(pageTasks, &TasksPage::tasksChanged, pageDashboard, &DashboardPage::refreshTaskCards);
+    connect(pageGroups, &GroupsPage::groupsChanged, this, [this]() {
+        pageDashboard->refreshTaskCards();
+        pageDashboard->refreshPinnedGroups();
+    });
 }
 
 void MainWindow::switchPage() {
@@ -213,8 +229,11 @@ void MainWindow::navigateBackToGroups() {
 void MainWindow::openCreateTaskDialog() {
     CreateTaskDialog* dialog = new CreateTaskDialog(this);
 
-    connect(dialog, &CreateTaskDialog::taskCreated,
-            this, &MainWindow::handleNewTask);
+    connect(dialog, &CreateTaskDialog::taskCreated,this, [this](const Task& task) {
+        handleNewTask(task);
+        emit tasksChanged();
+        pageTasks->loadTasks(task.getGroupId());
+    });
 
     dialog->exec();
 }

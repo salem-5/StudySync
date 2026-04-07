@@ -13,8 +13,10 @@ class DashboardPage : public QWidget {
 public:
     DashboardPage(QWidget* parent = nullptr);
     void refreshPinnedGroups();
+    void refreshTaskCards();
 private:
     QVBoxLayout* pinnedGroupsLayout;
+    QVBoxLayout* tasksLayout;
 private slots:
     void onStartFocusClicked();
 signals:

@@ -28,4 +28,16 @@ public:
     static void mockCreateGroup(const std::string& groupName);
     static void mockSendMessage(int groupId, const std::string& text);
     static void mockCreateTask(int groupId, const std::string& title, const std::string& category, int assigneeId);
+    static int mockGetUserIdByUsername(const std::string& username);
+    static void mockToggleTaskCompletion(int taskId, bool completed);
+    static void mockEditTask(int taskId, const std::string& title, const std::string& tag, int assigneeId);
+    static void mockAddMemberToGroup(int groupId, const std::string& username);
+    static void mockRemoveMemberFromGroup(int groupId, int userId);
+    static void mockDeleteGroup(int groupId);
+    static void mockDeleteTask(int taskId);
+    static void mockInviteMemberToGroup(int groupId, const std::string& username);
+    static void mockCancelInvite(int groupId, int userId);
+    static void mockAcceptInvite(int groupId, int userId);
+    static void mockDenyInvite(int groupId, int userId);
+    static std::vector<const StudyGroup*> getPendingInvites(int userId);
 };

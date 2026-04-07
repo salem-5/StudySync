@@ -48,6 +48,7 @@ FocusPage::FocusPage(QWidget* parent) : QWidget(parent), timer(new QTimer(this))
     connect(startButton, &QPushButton::clicked, this, &FocusPage::startTimer);
     connect(pauseButton, &QPushButton::clicked, this, &FocusPage::pauseTimer);
     connect(resetButton, &QPushButton::clicked, this, &FocusPage::resetTimer);
+    connect(groupSelect, &QComboBox::currentIndexChanged, this, &FocusPage::updateButtons);
 }
 
 void FocusPage::refreshGroupList() {
@@ -82,6 +83,12 @@ void FocusPage::updateTimer() {
         startButton->setEnabled(true);
         pauseButton->setEnabled(false);
     }
+}
+
+void FocusPage::updateButtons() {
+    bool isGroupSelected = !groupSelect->currentIndex();
+    startButton->setDisabled(isGroupSelected);
+    resetButton->setDisabled(isGroupSelected);
 }
 
 void FocusPage::startTimer() {

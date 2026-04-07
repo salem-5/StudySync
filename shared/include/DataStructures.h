@@ -99,6 +99,7 @@ private:
     std::vector<int> memberIds;
     std::vector<int> taskIds;
     std::vector<Message> messages;
+    std::vector<int> invitedMemberIds;
 
 public:
     StudyGroup(int id, const std::string& name);
@@ -117,6 +118,10 @@ public:
     void addTaskId(int taskId);
     void setMessages(const std::vector<Message>& messages);
     void addMessage(const Message& message);
+    void removeMemberId(int memberId);
+    std::vector<int> getInvitedMemberIds() const;
+    void addInvitedMemberId(int id);
+    void removeInvitedMemberId(int id);
 
     boost::json::object toJson() const;
     static StudyGroup fromJson(const boost::json::object& obj);

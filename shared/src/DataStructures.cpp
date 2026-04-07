@@ -153,6 +153,14 @@ void StudyGroup::setTaskIds(const std::vector<int>& taskIds) { this->taskIds = t
 void StudyGroup::addTaskId(int taskId) { this->taskIds.push_back(taskId); }
 void StudyGroup::setMessages(const std::vector<Message>& messages) { this->messages = messages; }
 void StudyGroup::addMessage(const Message& message) { this->messages.push_back(message); }
+void StudyGroup::removeMemberId(int memberId) {
+    memberIds.erase(std::remove(memberIds.begin(), memberIds.end(), memberId), memberIds.end());
+}
+std::vector<int> StudyGroup::getInvitedMemberIds() const { return invitedMemberIds; }
+void StudyGroup::addInvitedMemberId(int id) { invitedMemberIds.push_back(id); }
+void StudyGroup::removeInvitedMemberId(int id) {
+    invitedMemberIds.erase(std::remove(invitedMemberIds.begin(), invitedMemberIds.end(), id), invitedMemberIds.end());
+}
 
 boost::json::object StudyGroup::toJson() const {
     boost::json::array membersArray;

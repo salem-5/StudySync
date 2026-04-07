@@ -16,5 +16,7 @@ public:
 signals:
     void openChatRequested(int groupId);
     void pinStateChanged();
+    void manageMembersRequested(int groupId);
     void openTasksRequested(int groupId);
+    void deleteRequested(int groupId);
 };

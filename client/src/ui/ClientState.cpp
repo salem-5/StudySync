@@ -145,3 +145,123 @@ std::string ClientState::getUsername(int userId) {
     }
     return usernameCache[userId];
 }
+
+int ClientState::mockGetUserIdByUsername(const std::string& username) {
+    if (username == "CoolDev99") return 1;
+    if (username == "Alice") return 2;
+    if (username == "Bob") return 3;
+
+    int fakeId = std::hash<std::string>{}(username) % 1000 + 10;
+    usernameCache[fakeId] = username;
+    return fakeId;
+}
+
+void ClientState::mockToggleTaskCompletion(int taskId, bool completed) {
+    for (auto& task : tasks) {
+        if (task.getId() == taskId) {
+            task.setIsCompleted(completed);
+            break;
+        }
+    }
+}
+
+void ClientState::mockEditTask(int taskId, const std::string& title, const std::string& tag, int assigneeId) {
+    for (auto& task : tasks) {
+        if (task.getId() == taskId) {
+            task.setTitle(title);
+            task.setTag(tag);
+            task.setAssignedToId(assigneeId);
+            break;
+        }
+    }
+}
+
+void ClientState::mockAddMemberToGroup(int groupId, const std::string& username) {
+    int userId = mockGetUserIdByUsername(username);
+
+    for (auto& group : studyGroups) {
+        if (group.getId() == groupId) {
+            auto members = group.getMemberIds();
+            if (std::find(members.begin(), members.end(), userId) == members.end()) {
+                group.addMemberId(userId);
+            }
+            break;
+        }
+    }
+}
+
+void ClientState::mockRemoveMemberFromGroup(int groupId, int userId) {
+    for (auto& group : studyGroups) {
+        if (group.getId() == groupId) {
+            group.removeMemberId(userId);
+            break;
+        }
+    }
+}
+
+void ClientState::mockDeleteGroup(int groupId) {
+    tasks.erase(std::remove_if(tasks.begin(), tasks.end(),
+        [groupId](const Task& t) { return t.getGroupId() == groupId; }), tasks.end());
+
+    studyGroups.erase(std::remove_if(studyGroups.begin(), studyGroups.end(),
+        [groupId](const StudyGroup& g) { return g.getId() == groupId; }), studyGroups.end());
+
+    if (currentUser) {
+        std::vector<int> pinned = currentUser->getPinnedGroupIds();
+        pinned.erase(std::remove(pinned.begin(), pinned.end(), groupId), pinned.end());
+        currentUser->setPinnedGroupIds(pinned);
+    }
+}
+
+void ClientState::mockDeleteTask(int taskId) {
+    tasks.erase(std::remove_if(tasks.begin(), tasks.end(),
+        [taskId](const Task& t) { return t.getId() == taskId; }), tasks.end());
+}
+void ClientState::mockInviteMemberToGroup(int groupId, const std::string& username) {
+    int userId = mockGetUserIdByUsername(username);
+    for (auto& group : studyGroups) {
+        if (group.getId() == groupId) {
+            auto members = group.getMemberIds();
+            auto invited = group.getInvitedMemberIds();
+            if (std::find(members.begin(), members.end(), userId) == members.end()
+                &&std::find(invited.begin(), invited.end(), userId) == invited.end()) {
+                group.addInvitedMemberId(userId);
+            }
+            break;
+        }
+    }
+}
+
+void ClientState::mockCancelInvite(int groupId, int userId) {
+    for (auto& group : studyGroups) {
+        if (group.getId() == groupId) {
+            group.removeInvitedMemberId(userId);
+            break;
+        }
+    }
+}
+
+void ClientState::mockAcceptInvite(int groupId, int userId) {
+    for (auto& group : studyGroups) {
+        if (group.getId() == groupId) {
+            group.removeInvitedMemberId(userId);
+            group.addMemberId(userId);
+            break;
+        }
+    }
+}
+
+void ClientState::mockDenyInvite(int groupId, int userId) {
+    mockCancelInvite(groupId, userId);
+}
+
+std::vector<const StudyGroup*> ClientState::getPendingInvites(int userId) {
+    std::vector<const StudyGroup*> pending;
+    for (const auto& group : studyGroups) {
+        auto invited = group.getInvitedMemberIds();
+        if (std::find(invited.begin(), invited.end(), userId) != invited.end()) {
+            pending.push_back(&group);
+        }
+    }
+    return pending;
+}

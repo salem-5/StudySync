@@ -1,9 +1,7 @@
 #include "ui/widget/GroupCard.h"
-#include <iostream>
-#include <QApplication>
-#include <QFile>
 #include <QPushButton>
-
+#include <QMessageBox>
+#include <QHBoxLayout>
 #include "ui/ClientState.h"
 #include "LanguageManager.h"
 
@@ -23,9 +21,9 @@ GroupCard::GroupCard(const StudyGroup& group, bool isPinned, QWidget* parent) : 
     titleFont.setPointSize(12);
     title->setFont(titleFont);
 
+
     QPushButton* btnPin = new QPushButton(isPinned ? LanguageManager::tr("group.pinned") : LanguageManager::tr("group.pin"));
     btnPin->setCursor(Qt::PointingHandCursor);
-
     connect(btnPin, &QPushButton::clicked, this, [this, btnPin, id = group.getId()]() {
         ClientState::mockTogglePinGroup(id);
         bool currentlyPinned = ClientState::isGroupPinned(id);
@@ -41,9 +39,27 @@ GroupCard::GroupCard(const StudyGroup& group, bool isPinned, QWidget* parent) : 
     QLabel* members = new QLabel(QString::number(memberCount) + " members");
     members->setObjectName("members");
 
+    QPushButton* btnManageMembers = new QPushButton(LanguageManager::tr("group.manage_members"));
     QPushButton* btnChat = new QPushButton(LanguageManager::tr("group.open_chat"));
     QPushButton* btnTasks = new QPushButton(LanguageManager::tr("group.open_tasks"));
+    QPushButton* btnDelete = new QPushButton(LanguageManager::tr("group.delete"));
+    headerLayout->addWidget(btnDelete);
+    btnDelete->setCursor(Qt::PointingHandCursor);
+    connect(btnDelete, &QPushButton::clicked, this, [this, id = group.getId()]() {
+        QMessageBox::StandardButton reply = QMessageBox::question(
+            this,
+            "Delete Group",
+            "Are you sure you want to delete this group? All associated tasks will be lost.",
+            QMessageBox::Yes | QMessageBox::No
+        );
 
+        if (reply == QMessageBox::Yes) {
+            emit deleteRequested(id);
+        }
+    });
+    connect(btnManageMembers, &QPushButton::clicked, this, [this, id = group.getId()]() {
+        emit manageMembersRequested(id);
+    });
     connect(btnChat, &QPushButton::clicked, this, [this, id = group.getId()]() {
         emit openChatRequested(id);
     });
@@ -52,9 +68,9 @@ GroupCard::GroupCard(const StudyGroup& group, bool isPinned, QWidget* parent) : 
     });
 
     QHBoxLayout* actionsLayout = new QHBoxLayout();
+    actionsLayout->addWidget(btnManageMembers);
     actionsLayout->addWidget(btnChat);
     actionsLayout->addWidget(btnTasks);
-
     layout->addLayout(headerLayout);
     layout->addWidget(members);
     layout->addLayout(actionsLayout);
