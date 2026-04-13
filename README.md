@@ -25,6 +25,9 @@ StudySync is a tool built to help students manage their workload and collaborate
 * **C++**
 * **SQLite**
 
+## Credits & Acknowledgements
+* Initial SQLite database schema was generated using SQLAlchemy in python and then manually integrated into the C++ application.
+
 ## Building
 Run this command in your terminal to build both the client and the server:
 ```bash
