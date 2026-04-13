@@ -341,3 +341,32 @@ void Database::addMessage(int groupId, int userId, const std::string& text) {
     }
     sqlite3_finalize(stmt);
 }
+
+int Database::createUser(const std::string& username, const std::string& email, const std::string& password) {
+    std::lock_guard<std::mutex> lock(dbMutex);
+    sqlite3_stmt* stmt;
+    int newUserId = -1;
+
+    if (sqlite3_prepare_v2(db, "INSERT INTO Users (username, email, password) VALUES (?, ?, ?);", -1, &stmt, nullptr) == SQLITE_OK) {
+        sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt, 2, email.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt, 3, password.c_str(), -1, SQLITE_STATIC);
+
+        if (sqlite3_step(stmt) == SQLITE_DONE) {
+            newUserId = sqlite3_last_insert_rowid(db);
+        }
+    }
+    sqlite3_finalize(stmt);
+    return newUserId; // Returns -1 if it fails
+}
+
+void Database::deleteUser(int userId) {
+    std::lock_guard<std::mutex> lock(dbMutex);
+    sqlite3_stmt* stmt;
+
+    if (sqlite3_prepare_v2(db, "DELETE FROM Users WHERE id = ?;", -1, &stmt, nullptr) == SQLITE_OK) {
+        sqlite3_bind_int(stmt, 1, userId);
+        sqlite3_step(stmt);
+    }
+    sqlite3_finalize(stmt);
+}

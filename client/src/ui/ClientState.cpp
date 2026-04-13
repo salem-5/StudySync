@@ -279,3 +279,17 @@ void ClientState::mockDenyInvite(int groupId, int userId) {
             return g.getId() == groupId;
         }), pendingInvites.end());
 }
+
+void ClientState::mockCreateUser(const std::string& username, const std::string& email, const std::string& password) {
+    if (!currentUser) {
+        int fakeId = std::hash<std::string>{}(username) % 1000 + 10;
+        currentUser = std::make_unique<User>(fakeId, username, email, password, false);
+        usernameCache[fakeId] = username;
+    }
+}
+
+void ClientState::mockDeleteUser(int userId) {
+    if (currentUser && currentUser->getId() == userId) {
+        clear();
+    }
+}

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <istream>
 #include <boost/json/src.hpp>
+#include "Database.h"
 
 TcpConnection::pointer TcpConnection::create(boost::asio::io_context& ioContext) {
     return pointer(new TcpConnection(ioContext));
@@ -56,13 +57,30 @@ void TcpConnection::handleMessage(const std::string& msg) {
             response["data"] = timeStr;
             response["status"] = "success";
         }
-        else if (cmd == "print") {
-            if (obj.contains("text")) {
-                std::cout << "\nclient printed: " << obj.at("text").as_string() << "\n" << std::endl;
+        else if (cmd == "createUser") {
+            std::string username = obj.at("username").as_string().c_str();
+            std::string email = obj.at("email").as_string().c_str();
+            std::string password = obj.at("password").as_string().c_str();
+
+            int newId = Database::getInstance().createUser(username, email, password);
+
+            if (newId != -1) {
                 response["status"] = "success";
+
+                User newUser(newId, username, email, password, false);
+                response["user"] = newUser.toSafeJson();
+                response["sync_counter"] = Database::getInstance().getSyncCounter();
             } else {
                 response["status"] = "error";
+                response["message"] = "Username already exists.";
             }
+        }
+        else if (cmd == "deleteUser") {
+            int userId = obj.at("userId").as_int64();
+            Database::getInstance().deleteUser(userId);
+
+            response["status"] = "success";
+            response["sync_counter"] = Database::getInstance().getSyncCounter();
         }
 
         send(boost::json::serialize(response));
@@ -71,6 +89,7 @@ void TcpConnection::handleMessage(const std::string& msg) {
         std::cerr << "error parsing the json " << e.what() << std::endl;
     }
 }
+
 void TcpConnection::send(const std::string& message) {
     std::string formatted_msg = message;
     if (formatted_msg.back() != '\n') formatted_msg += '\n';

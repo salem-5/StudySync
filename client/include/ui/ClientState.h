@@ -40,5 +40,7 @@ public:
     static void mockCancelInvite(int groupId, int userId);
     static void mockAcceptInvite(int groupId, int userId);
     static void mockDenyInvite(int groupId, int userId);
+    static void mockCreateUser(const std::string& username, const std::string& email, const std::string& password);
+    static void mockDeleteUser(int userId);
     static std::vector<const StudyGroup*> getPendingInvites(int userId);
 };
