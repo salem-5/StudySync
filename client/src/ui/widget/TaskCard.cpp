@@ -39,7 +39,7 @@ TaskCard::TaskCard(const Task& task, const QString& groupName, QWidget* parent, 
 
     updateTitleStyle(task.getIsCompleted());
     connect(checkbox, &QCheckBox::toggled, this, [this, id = task.getId(), updateTitleStyle](bool checked) {
-        ClientState::mockToggleTaskCompletion(id, checked);
+        ClientState::toggleTaskCompletion(id, checked);
         updateTitleStyle(checked);
         emit taskStateChanged();
     });

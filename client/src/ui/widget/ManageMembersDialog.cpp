@@ -29,7 +29,7 @@ ManageMembersDialog::ManageMembersDialog(int groupId, QWidget* parent) : QDialog
     connect(btnAdd, &QPushButton::clicked, this, [this, usernameInput]() {
         QString uname = usernameInput->text().trimmed();
         if (!uname.isEmpty()) {
-            ClientState::mockInviteMemberToGroup(this->groupId, uname.toStdString());
+            ClientState::inviteMemberToGroup(this->groupId, uname.toStdString());
             usernameInput->clear();
             refreshList();
             emit membersUpdated();
@@ -99,7 +99,7 @@ void ManageMembersDialog::refreshList() {
         QString btnText = isSelf ? "" : LanguageManager::tr("group.remove_member");
 
         QWidget* row = createMemberRow(name, btnText, [this, mId]() {
-            ClientState::mockRemoveMemberFromGroup(groupId, mId);
+            ClientState::removeMemberFromGroup(groupId, mId);
             refreshList();
             emit membersUpdated();
         });
@@ -110,7 +110,7 @@ void ManageMembersDialog::refreshList() {
         QString name = QString::fromStdString(ClientState::getUsername(mId)) + " (" + LanguageManager::tr("group.invited_status") + ")";
 
         QWidget* row = createMemberRow(name, LanguageManager::tr("group.cancel_invite"), [this, mId]() {
-            ClientState::mockCancelInvite(groupId, mId);
+            ClientState::cancelInvite(groupId, mId);
             refreshList();
             emit membersUpdated();
         });

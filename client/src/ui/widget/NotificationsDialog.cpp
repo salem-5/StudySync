@@ -69,14 +69,14 @@ void NotificationsDialog::refresh()
 
         connect(btnAccept, &QPushButton::clicked, this,
             [this, gId = group->getId(), uId = user->getId()]() {
-                ClientState::mockAcceptInvite(gId, uId);
+                ClientState::acceptInvite(gId, uId);
                 refresh();
             }
         );
 
         connect(btnDeny, &QPushButton::clicked, this,
             [this, gId = group->getId(), uId = user->getId()]() {
-                ClientState::mockDenyInvite(gId, uId);
+                ClientState::denyInvite(gId, uId);
                 refresh();
             }
         );

@@ -1,6 +1,6 @@
 #include "ClientNetworkManager.h"
 #include <iostream>
-
+#include "ui/MainWindow.h"
 ClientNetworkManager::ClientNetworkManager(const std::string& host, const std::string& port)
     : tcpClient(host, port,
         [this](const std::string& msg) { onMessageReceived(msg); },

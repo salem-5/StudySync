@@ -171,15 +171,15 @@ int Database::createGroup(const std::string& groupName, int creatorId) {
     sqlite3_finalize(stmt);
 
     if (newGroupId != -1) {
-        sqlite3_prepare_v2(db, "INSERT INTO GroupMembers (group_id, user_id) VALUES (?, ?);", -1, &stmt, nullptr);
-        sqlite3_bind_int(stmt, 1, newGroupId);
-        sqlite3_bind_int(stmt, 2, creatorId);
-        sqlite3_step(stmt);
+        if (sqlite3_prepare_v2(db, "INSERT INTO GroupMembers (group_id, user_id) VALUES (?, ?);", -1, &stmt, nullptr) == SQLITE_OK) {
+            sqlite3_bind_int(stmt, 1, newGroupId);
+            sqlite3_bind_int(stmt, 2, creatorId);
+            sqlite3_step(stmt);
+        }
         sqlite3_finalize(stmt);
     }
     return newGroupId;
 }
-
 void Database::deleteGroup(int groupId) {
     std::lock_guard<std::mutex> lock(dbMutex);
     sqlite3_stmt* stmt;
@@ -409,7 +409,8 @@ LoginPayload Database::getFullUserData(int userId, const std::string& sessionTok
         sqlite3_bind_int(stmt, 1, userId);
         if (sqlite3_step(stmt) == SQLITE_ROW) {
             user.setUsername(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0)));
-            if (sqlite3_column_text(stmt, 1)) user.setEmail(reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)));
+            const char* email = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+            if (email) user.setEmail(email);
             user.setAiAccess(sqlite3_column_int(stmt, 2) != 0);
         }
     }
@@ -424,52 +425,72 @@ LoginPayload Database::getFullUserData(int userId, const std::string& sessionTok
     sqlite3_finalize(stmt);
 
     std::vector<StudyGroup> studyGroups;
-    std::vector<int> myGroupIds;
     if (sqlite3_prepare_v2(db, "SELECT g.id, g.name FROM StudyGroups g JOIN GroupMembers gm ON g.id = gm.group_id WHERE gm.user_id = ?;", -1, &stmt, nullptr) == SQLITE_OK) {
         sqlite3_bind_int(stmt, 1, userId);
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             int gId = sqlite3_column_int(stmt, 0);
             StudyGroup sg(gId, reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)));
             studyGroups.push_back(sg);
-            myGroupIds.push_back(gId);
             user.addGroupId(gId);
         }
     }
     sqlite3_finalize(stmt);
 
-    std::vector<Task> tasks;
+    std::vector<Task> allTasks;
     for (auto& sg : studyGroups) {
-        if (sqlite3_prepare_v2(db, "SELECT id, title, tag, is_completed, owner_id, assigned_to_id FROM Tasks WHERE group_id = ?;", -1, &stmt, nullptr) == SQLITE_OK) {
-            sqlite3_bind_int(stmt, 1, sg.getId());
-            while (sqlite3_step(stmt) == SQLITE_ROW) {
-                Task t(sqlite3_column_int(stmt, 0), reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)),
-                       sqlite3_column_text(stmt, 2) ? reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)) : "",
-                       sqlite3_column_int(stmt, 3) != 0, sqlite3_column_int(stmt, 4), sqlite3_column_int(stmt, 5), sg.getId());
-                tasks.push_back(t);
+        sqlite3_stmt* memberStmt;
+        if (sqlite3_prepare_v2(db, "SELECT user_id FROM GroupMembers WHERE group_id = ?;", -1, &memberStmt, nullptr) == SQLITE_OK) {
+            sqlite3_bind_int(memberStmt, 1, sg.getId());
+            while (sqlite3_step(memberStmt) == SQLITE_ROW) {
+                sg.addMemberId(sqlite3_column_int(memberStmt, 0));
+            }
+        }
+        sqlite3_finalize(memberStmt);
+
+        sqlite3_stmt* inviteStmt;
+        if (sqlite3_prepare_v2(db, "SELECT user_id FROM GroupInvites WHERE group_id = ?;", -1, &inviteStmt, nullptr) == SQLITE_OK) {
+            sqlite3_bind_int(inviteStmt, 1, sg.getId());
+            while (sqlite3_step(inviteStmt) == SQLITE_ROW) {
+                sg.addInvitedMemberId(sqlite3_column_int(inviteStmt, 0));
+            }
+        }
+        sqlite3_finalize(inviteStmt);
+
+        sqlite3_stmt* taskStmt;
+        if (sqlite3_prepare_v2(db, "SELECT id, title, tag, is_completed, owner_id, assigned_to_id FROM Tasks WHERE group_id = ?;", -1, &taskStmt, nullptr) == SQLITE_OK) {
+            sqlite3_bind_int(taskStmt, 1, sg.getId());
+            while (sqlite3_step(taskStmt) == SQLITE_ROW) {
+                Task t(sqlite3_column_int(taskStmt, 0),
+                       reinterpret_cast<const char*>(sqlite3_column_text(taskStmt, 1)),
+                       sqlite3_column_text(taskStmt, 2) ? reinterpret_cast<const char*>(sqlite3_column_text(taskStmt, 2)) : "",
+                       sqlite3_column_int(taskStmt, 3) != 0,
+                       sqlite3_column_int(taskStmt, 4),
+                       sqlite3_column_int(taskStmt, 5),
+                       sg.getId());
+                allTasks.push_back(t);
                 sg.addTaskId(t.getId());
             }
         }
-        sqlite3_finalize(stmt);
+        sqlite3_finalize(taskStmt);
 
-        if (sqlite3_prepare_v2(db, "SELECT user_id, text FROM Messages WHERE group_id = ?;", -1, &stmt, nullptr) == SQLITE_OK) {
-            sqlite3_bind_int(stmt, 1, sg.getId());
-            while (sqlite3_step(stmt) == SQLITE_ROW) {
-                Message m(sqlite3_column_int(stmt, 0), reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)));
-                sg.addMessage(m);
+        sqlite3_stmt* msgStmt;
+        if (sqlite3_prepare_v2(db, "SELECT user_id, text FROM Messages WHERE group_id = ? ORDER BY id ASC;", -1, &msgStmt, nullptr) == SQLITE_OK) {
+            sqlite3_bind_int(msgStmt, 1, sg.getId());
+            while (sqlite3_step(msgStmt) == SQLITE_ROW) {
+                sg.addMessage(Message(sqlite3_column_int(msgStmt, 0), reinterpret_cast<const char*>(sqlite3_column_text(msgStmt, 1))));
             }
         }
-        sqlite3_finalize(stmt);
+        sqlite3_finalize(msgStmt);
     }
 
     std::vector<StudyGroup> pendingInvites;
     if (sqlite3_prepare_v2(db, "SELECT g.id, g.name FROM StudyGroups g JOIN GroupInvites gi ON g.id = gi.group_id WHERE gi.user_id = ?;", -1, &stmt, nullptr) == SQLITE_OK) {
         sqlite3_bind_int(stmt, 1, userId);
         while (sqlite3_step(stmt) == SQLITE_ROW) {
-            StudyGroup inv(sqlite3_column_int(stmt, 0), reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)));
-            inv.addInvitedMemberId(userId);
-            pendingInvites.push_back(inv);
+            pendingInvites.push_back(StudyGroup(sqlite3_column_int(stmt, 0), reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1))));
         }
     }
     sqlite3_finalize(stmt);
-    return LoginPayload(user, studyGroups, pendingInvites, tasks, sessionToken);
+
+    return LoginPayload(user, studyGroups, pendingInvites, allTasks, sessionToken);
 }

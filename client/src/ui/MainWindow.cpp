@@ -256,5 +256,5 @@ void MainWindow::openCreateTaskDialog() {
 }
 
 void MainWindow::handleNewTask(Task task) {
-    ClientState::mockCreateTask(task.getGroupId(), task.getTitle(), task.getTag(), task.getAssignedToId());
+    ClientState::createTask(task.getGroupId(), task.getTitle(), task.getTag(), task.getAssignedToId());
 }

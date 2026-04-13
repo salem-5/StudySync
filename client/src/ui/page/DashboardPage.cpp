@@ -93,7 +93,7 @@ void DashboardPage::refreshPinnedGroups() {
         connect(pinnedCard, &GroupCard::openTasksRequested, this, &DashboardPage::openGroupTasksRequested);
         connect(pinnedCard, &GroupCard::pinStateChanged, this, &DashboardPage::refreshPinnedGroups);
         connect(pinnedCard, &GroupCard::deleteRequested, this, [this](int id) {
-            ClientState::mockDeleteGroup(id);
+            ClientState::deleteGroup(id);
             refreshPinnedGroups();
             refreshTaskCards();
         });

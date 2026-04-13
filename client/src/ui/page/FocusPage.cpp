@@ -98,7 +98,7 @@ void FocusPage::startTimer() {
             int minutes = DefaultFocusDurationSeconds / 60;
 
             QString msg = LanguageManager::tr("focus.announce_msg").arg(minutes);
-            ClientState::mockSendMessage(groupId, msg.toStdString());
+            ClientState::sendMessage(groupId, msg.toStdString());
         }
 
         timer->start(1000);

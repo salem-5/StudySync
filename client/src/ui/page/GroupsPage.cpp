@@ -60,7 +60,7 @@ void GroupsPage::loadGroups() {
             dialog->exec();
         });
         connect(card, &GroupCard::deleteRequested, this, [this](int id) {
-            ClientState::mockDeleteGroup(id);
+            ClientState::deleteGroup(id);
             loadGroups();
             emit groupsChanged();
         });

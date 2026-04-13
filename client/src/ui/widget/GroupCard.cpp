@@ -25,7 +25,7 @@ GroupCard::GroupCard(const StudyGroup& group, bool isPinned, QWidget* parent) : 
     QPushButton* btnPin = new QPushButton(isPinned ? LanguageManager::tr("group.pinned") : LanguageManager::tr("group.pin"));
     btnPin->setCursor(Qt::PointingHandCursor);
     connect(btnPin, &QPushButton::clicked, this, [this, btnPin, id = group.getId()]() {
-        ClientState::mockTogglePinGroup(id);
+        ClientState::togglePinGroup(id);
         bool currentlyPinned = ClientState::isGroupPinned(id);
         btnPin->setText(currentlyPinned ? LanguageManager::tr("group.pinned") : LanguageManager::tr("group.pin"));
         emit pinStateChanged();

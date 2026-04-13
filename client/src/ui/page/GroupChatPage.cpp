@@ -27,6 +27,6 @@ void GroupChatPage::loadChat(int groupId) {
 }
 
 void GroupChatPage::onSendMessageRequested(const QString& text) {
-    ClientState::mockSendMessage(currentGroupId, text.toStdString());
+    ClientState::sendMessage(currentGroupId, text.toStdString());
     loadChat(currentGroupId);
 }

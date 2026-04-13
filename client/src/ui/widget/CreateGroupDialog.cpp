@@ -27,7 +27,7 @@ CreateGroupDialog::CreateGroupDialog(QWidget* parent) : QDialog(parent) {
     connect(btnCancel, &QPushButton::clicked, this, &QDialog::reject);
     connect(btnCreate, &QPushButton::clicked, this, [this]() {
         if (!nameInput->text().trimmed().isEmpty()) {
-            ClientState::mockCreateGroup(nameInput->text().toStdString());
+            ClientState::createGroup(nameInput->text().toStdString());
             emit groupCreated();
             accept();
         }

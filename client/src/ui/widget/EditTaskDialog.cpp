@@ -57,7 +57,7 @@ EditTaskDialog::EditTaskDialog(const Task& task, QWidget* parent) : QDialog(pare
         );
 
         if (reply == QMessageBox::Yes) {
-            ClientState::mockDeleteTask(taskId);
+            ClientState::deleteTask(taskId);
             emit taskUpdated();
             accept();
         }
@@ -67,7 +67,7 @@ EditTaskDialog::EditTaskDialog(const Task& task, QWidget* parent) : QDialog(pare
         std::string newTitle = titleInput->text().toStdString();
         std::string newTag = tagInput->text().toStdString();
         int newAssignee = assigneeCombo->currentData().toInt();
-        ClientState::mockEditTask(taskId, newTitle, newTag, newAssignee);
+        ClientState::editTask(taskId, newTitle, newTag, newAssignee);
         emit taskUpdated();
         accept();
     });
