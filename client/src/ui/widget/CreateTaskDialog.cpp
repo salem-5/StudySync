@@ -22,10 +22,6 @@ CreateTaskDialog::CreateTaskDialog(QWidget* parent)
     btnCreate = new QPushButton(LanguageManager::tr("action.create"), this);
     btnCancel = new QPushButton(LanguageManager::tr("action.cancel"), this);
 
-    for (const auto& group : ClientState::getStudyGroups()) {
-        groupCombo->addItem(QString::fromStdString(group.getName()), group.getId());
-    }
-
     auto updateAssignees = [this]() {
         assigneeCombo->clear();
         int currentGroupId = groupCombo->currentData().toInt();
@@ -37,11 +33,29 @@ CreateTaskDialog::CreateTaskDialog(QWidget* parent)
             }
         }
     };
-    connect(groupCombo, &QComboBox::currentIndexChanged, this, updateAssignees);
-    if (groupCombo->count() > 0) {
-        groupCombo->setCurrentIndex(0);
+    auto refreshGroups = [this, updateAssignees]() {
+        QVariant currentData = groupCombo->currentData();
+        groupCombo->blockSignals(true);
+        groupCombo->clear();
+
+        for (const auto& group : ClientState::getStudyGroups()) {
+            groupCombo->addItem(QString::fromStdString(group.getName()), group.getId());
+        }
+
+        int idx = groupCombo->findData(currentData);
+        if (idx != -1) {
+            groupCombo->setCurrentIndex(idx);
+        } else if (groupCombo->count() > 0) {
+            groupCombo->setCurrentIndex(0);
+        }
+        groupCombo->blockSignals(false);
         updateAssignees();
-    }
+    };
+    connect(groupCombo, &QComboBox::currentIndexChanged, this, updateAssignees);
+
+    refreshGroups();
+    connect(ClientNotifier::instance(), &ClientNotifier::groupsChanged, this, refreshGroups);
+    connect(ClientNotifier::instance(), &ClientNotifier::userChanged, this, updateAssignees);
 
     layout->addRow(LanguageManager::tr("task.form.title"), titleInput);
     layout->addRow(LanguageManager::tr("task.form.tag"), tagInput);

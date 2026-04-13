@@ -41,6 +41,8 @@ ManageMembersDialog::ManageMembersDialog(int groupId, QWidget* parent) : QDialog
     mainLayout->addLayout(addLayout);
 
     refreshList();
+    connect(ClientNotifier::instance(), &ClientNotifier::groupsChanged, this, &ManageMembersDialog::refreshList);
+    connect(ClientNotifier::instance(), &ClientNotifier::userChanged, this, &ManageMembersDialog::refreshList);
 }
 
 void ManageMembersDialog::refreshList() {

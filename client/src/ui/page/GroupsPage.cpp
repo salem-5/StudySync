@@ -33,7 +33,7 @@ GroupsPage::GroupsPage(QWidget* parent) : QWidget(parent) {
 void GroupsPage::loadGroups() {
     QLayoutItem* item;
     while ((item = gridLayout->takeAt(0)) != nullptr) {
-        if (item->widget()) delete item->widget();
+        if (item->widget()) item->widget()->deleteLater();
         delete item;
     }
 

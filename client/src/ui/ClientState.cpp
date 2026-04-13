@@ -60,6 +60,11 @@ void ClientState::loadFromPayload(const LoginPayload& payload) {
     pendingInvites = payload.getPendingInvites();
     tasks = payload.getTasks();
     sessionToken = payload.getSessionToken();
+
+    emit ClientNotifier::instance()->userChanged();
+    emit ClientNotifier::instance()->groupsChanged();
+    emit ClientNotifier::instance()->invitesChanged();
+    emit ClientNotifier::instance()->tasksChanged();
 }
 
 void ClientState::clear() {
@@ -69,9 +74,15 @@ void ClientState::clear() {
     tasks.clear();
     usernameCache.clear();
     sessionToken = "";
+
+    emit ClientNotifier::instance()->userChanged();
+    emit ClientNotifier::instance()->groupsChanged();
+    emit ClientNotifier::instance()->invitesChanged();
+    emit ClientNotifier::instance()->tasksChanged();
 }
 
 void ClientState::initDummyData() {}
+
 void ClientState::togglePinGroup(int groupId) {
     static std::unordered_set<int> togglingGroups;
     if (togglingGroups.count(groupId)) return;
@@ -83,6 +94,8 @@ void ClientState::togglePinGroup(int groupId) {
     else pinned.push_back(groupId);
     currentUser->setPinnedGroupIds(pinned);
 
+    emit ClientNotifier::instance()->groupsChanged();
+
     if (apiInstance) {
         togglingGroups.insert(groupId);
         apiInstance->togglePinGroup(groupId, [groupId](bool success) { togglingGroups.erase(groupId); });
@@ -92,14 +105,18 @@ void ClientState::togglePinGroup(int groupId) {
 void ClientState::deleteGroup(int groupId) {
     auto it = std::find_if(studyGroups.begin(), studyGroups.end(), [groupId](const StudyGroup& g) { return g.getId() == groupId; });
     if (it != studyGroups.end()) {
-        studyGroups.erase(it); // Delete locally
+        studyGroups.erase(it);
         tasks.erase(std::remove_if(tasks.begin(), tasks.end(), [groupId](const Task& t) { return t.getGroupId() == groupId; }), tasks.end());
         if (currentUser) {
             std::vector<int> pinned = currentUser->getPinnedGroupIds();
             pinned.erase(std::remove(pinned.begin(), pinned.end(), groupId), pinned.end());
             currentUser->setPinnedGroupIds(pinned);
         }
-        if (apiInstance) apiInstance->deleteGroup(groupId, nullptr); // send Network Request
+
+        emit ClientNotifier::instance()->groupsChanged();
+        emit ClientNotifier::instance()->tasksChanged();
+
+        if (apiInstance) apiInstance->deleteGroup(groupId, nullptr);
     }
 }
 
@@ -107,6 +124,7 @@ void ClientState::deleteTask(int taskId) {
     auto it = std::find_if(tasks.begin(), tasks.end(), [taskId](const Task& t) { return t.getId() == taskId; });
     if (it != tasks.end()) {
         tasks.erase(it);
+        emit ClientNotifier::instance()->tasksChanged();
         if (apiInstance) apiInstance->deleteTask(taskId, nullptr);
     }
 }
@@ -116,6 +134,7 @@ void ClientState::toggleTaskCompletion(int taskId, bool completed) {
         if (task.getId() == taskId) {
             if (task.getIsCompleted() != completed) {
                 task.setIsCompleted(completed);
+                emit ClientNotifier::instance()->tasksChanged();
                 if (apiInstance) apiInstance->toggleTaskCompletion(taskId, completed, nullptr);
             }
             break;
@@ -130,6 +149,7 @@ void ClientState::editTask(int taskId, const std::string& title, const std::stri
                 task.setTitle(title);
                 task.setTag(tag);
                 task.setAssignedToId(assigneeId);
+                emit ClientNotifier::instance()->tasksChanged();
                 if (apiInstance) apiInstance->editTask(taskId, title, tag, assigneeId, nullptr);
             }
             break;
@@ -143,6 +163,7 @@ void ClientState::removeMemberFromGroup(int groupId, int userId) {
             auto members = group.getMemberIds();
             if (std::find(members.begin(), members.end(), userId) != members.end()) {
                 group.removeMemberId(userId);
+                emit ClientNotifier::instance()->groupsChanged();
                 if (apiInstance) apiInstance->removeMemberFromGroup(groupId, userId, nullptr);
             }
             break;
@@ -156,6 +177,7 @@ void ClientState::cancelInvite(int groupId, int userId) {
             auto invited = group.getInvitedMemberIds();
             if (std::find(invited.begin(), invited.end(), userId) != invited.end()) {
                 group.removeInvitedMemberId(userId);
+                emit ClientNotifier::instance()->groupsChanged();
                 if (apiInstance) apiInstance->cancelInvite(groupId, userId, nullptr);
             }
             break;
@@ -173,6 +195,10 @@ void ClientState::acceptInvite(int groupId, int userId) {
         pendingInvites.erase(it);
 
         if (currentUser && currentUser->getId() == userId) currentUser->addGroupId(groupId);
+
+        emit ClientNotifier::instance()->groupsChanged();
+        emit ClientNotifier::instance()->invitesChanged();
+
         if (apiInstance) apiInstance->acceptInvite(groupId, userId, nullptr);
     }
 }
@@ -181,10 +207,10 @@ void ClientState::denyInvite(int groupId, int userId) {
     auto it = std::find_if(pendingInvites.begin(), pendingInvites.end(), [groupId](const StudyGroup& g) { return g.getId() == groupId; });
     if (it != pendingInvites.end()) {
         pendingInvites.erase(it);
+        emit ClientNotifier::instance()->invitesChanged();
         if (apiInstance) apiInstance->denyInvite(groupId, userId, nullptr);
     }
 }
-
 
 void ClientState::createGroup(const std::string& groupName) {
     if (apiInstance) apiInstance->createGroup(groupName, nullptr);
@@ -197,6 +223,7 @@ void ClientState::createGroup(int groupId, const std::string& groupName) {
         currentUser->addGroupId(groupId);
     }
     studyGroups.push_back(newGroup);
+    emit ClientNotifier::instance()->groupsChanged();
 }
 
 void ClientState::createTask(int groupId, const std::string& title, const std::string& category, int assigneeId) {
@@ -213,8 +240,9 @@ void ClientState::createTask(int taskId, int groupId, const std::string& title, 
             break;
         }
     }
+    emit ClientNotifier::instance()->tasksChanged();
+    emit ClientNotifier::instance()->groupsChanged();
 }
-
 
 void ClientState::sendMessage(int groupId, const std::string& text) {
     if (apiInstance) apiInstance->sendMessage(groupId, text, nullptr);
@@ -224,6 +252,7 @@ void ClientState::sendMessage(int groupId, int userId, const std::string& text) 
     for (auto& group : studyGroups) {
         if (group.getId() == groupId) {
             group.addMessage(Message(userId, text));
+            emit ClientNotifier::instance()->groupsChanged();
             break;
         }
     }
@@ -240,12 +269,12 @@ void ClientState::inviteMemberToGroup(int groupId, int userId) {
             auto invited = group.getInvitedMemberIds();
             if (std::find(members.begin(), members.end(), userId) == members.end() && std::find(invited.begin(), invited.end(), userId) == invited.end()) {
                 group.addInvitedMemberId(userId);
+                emit ClientNotifier::instance()->groupsChanged();
             }
             break;
         }
     }
 }
-
 
 void ClientState::createUser(const std::string& username, const std::string& email, const std::string& password) {
     if (apiInstance) apiInstance->createUser(username, email, password, nullptr);
@@ -254,12 +283,13 @@ void ClientState::createUser(const std::string& username, const std::string& ema
 void ClientState::deleteUser(int userId) {
     if (currentUser && currentUser->getId() == userId) {
         if (apiInstance) apiInstance->deleteUser(userId, nullptr);
-        clear();
+        clear(); // Clear already handles emissions
     }
 }
 
 void ClientState::requestUsername(int userId, const std::string& username) {
     usernameCache[userId] = username;
+    emit ClientNotifier::instance()->userChanged();
 }
 
 void ClientState::addMemberToGroup(int groupId, int userId) {
@@ -268,6 +298,7 @@ void ClientState::addMemberToGroup(int groupId, int userId) {
             auto members = group.getMemberIds();
             if (std::find(members.begin(), members.end(), userId) == members.end()) {
                 group.addMemberId(userId);
+                emit ClientNotifier::instance()->groupsChanged();
             }
             break;
         }

@@ -143,6 +143,8 @@ void MainWindow::setupTopbar() {
 }
 
 void MainWindow::connectSignals() {
+    connect(ClientNotifier::instance(), &ClientNotifier::groupsChanged, this, &MainWindow::groupsChanged);
+    connect(ClientNotifier::instance(), &ClientNotifier::tasksChanged, this, &MainWindow::tasksChanged);
     connect(createTaskBtn, &QPushButton::clicked, this, &MainWindow::openCreateTaskDialog);
     connect(btnDashboard, &QPushButton::clicked, this, &MainWindow::switchPage);
     connect(btnFocus, &QPushButton::clicked, this, &MainWindow::switchPage);

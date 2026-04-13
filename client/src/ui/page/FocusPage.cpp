@@ -18,7 +18,6 @@ FocusPage::FocusPage(QWidget* parent) : QWidget(parent), timer(new QTimer(this))
 
     groupSelect = new QComboBox();
     groupSelect->addItem(LanguageManager::tr("focus.group_placeholder"));
-    refreshGroupList();
 
     timerLabel = new QLabel();
     QFont timerFont = timerLabel->font();
@@ -48,15 +47,31 @@ FocusPage::FocusPage(QWidget* parent) : QWidget(parent), timer(new QTimer(this))
     connect(pauseButton, &QPushButton::clicked, this, &FocusPage::pauseTimer);
     connect(resetButton, &QPushButton::clicked, this, &FocusPage::resetTimer);
     connect(groupSelect, &QComboBox::currentIndexChanged, this, &FocusPage::updateButtons);
+    refreshGroupList();
 }
 
 void FocusPage::refreshGroupList() {
+    QVariant currentId = groupSelect->currentData();
+    groupSelect->blockSignals(true);
+
     groupSelect->clear();
     groupSelect->addItem(LanguageManager::tr("focus.group_placeholder"));
     const auto& studyGroups = ClientState::getStudyGroups();
     for (const StudyGroup& group : studyGroups) {
         groupSelect->addItem(QString::fromStdString(group.getName()), QVariant(group.getId()));
     }
+
+    int indexToSelect = 0;
+    if (currentId.isValid()) {
+        int foundIndex = groupSelect->findData(currentId);
+        if (foundIndex != -1) {
+            indexToSelect = foundIndex;
+        }
+    }
+
+    groupSelect->setCurrentIndex(indexToSelect);
+    groupSelect->blockSignals(false);
+    updateButtons();
 }
 
 
@@ -85,9 +100,9 @@ void FocusPage::updateTimer() {
 }
 
 void FocusPage::updateButtons() {
-    bool isGroupSelected = !groupSelect->currentIndex();
-    startButton->setDisabled(isGroupSelected);
-    resetButton->setDisabled(isGroupSelected);
+    bool noGroupSelected = (groupSelect->currentIndex() == 0);
+    startButton->setDisabled(noGroupSelected || timer->isActive());
+    resetButton->setDisabled(noGroupSelected);
 }
 
 void FocusPage::startTimer() {

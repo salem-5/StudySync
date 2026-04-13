@@ -1,4 +1,5 @@
 #pragma once
+#include <QObject>
 #include <string>
 #include <vector>
 #include <memory>
@@ -6,6 +7,20 @@
 #include <unordered_set>
 #include "DataStructures.h"
 #include "ServerAPI.h"
+
+class ClientNotifier : public QObject {
+    Q_OBJECT
+public:
+    static ClientNotifier* instance() {
+        static ClientNotifier _instance;
+        return &_instance;
+    }
+signals:
+    void groupsChanged();
+    void tasksChanged();
+    void userChanged();
+    void invitesChanged();
+};
 
 class ClientState {
 public:

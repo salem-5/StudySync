@@ -17,4 +17,5 @@ signals:
 private:
     QVBoxLayout* tasksLayout;
     QGroupBox* group;
+    int currentGroupId = -1;
 };

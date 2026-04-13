@@ -12,19 +12,29 @@ TasksPage::TasksPage(QWidget* parent) : QWidget(parent) {
 
     QPushButton* btnBack = new QPushButton(LanguageManager::tr("nav.back_to_groups"));
     connect(btnBack, &QPushButton::clicked, this, &TasksPage::backToGroupsRequested);
+
+    connect(btnBack, &QPushButton::clicked, this, [this]() {
+        currentGroupId = -1;
+    });
+
     mainLayout->addWidget(btnBack, 0, Qt::AlignLeft);
 
     group = new QGroupBox(LanguageManager::tr("task.title"));
     tasksLayout = new QVBoxLayout(group);
 
     mainLayout->addWidget(group);
+
+    connect(ClientNotifier::instance(), &ClientNotifier::tasksChanged, this, [this]() {
+        if (currentGroupId != -1) loadTasks(currentGroupId);
+    });
 }
 
 void TasksPage::loadTasks(int groupId) {
+    currentGroupId = groupId;
     QLayoutItem* item;
     while ((item = tasksLayout->takeAt(0)) != nullptr) {
         if (item->widget()) {
-            delete item->widget();
+            item->widget()->deleteLater();
         }
         delete item;
     }
@@ -39,21 +49,14 @@ void TasksPage::loadTasks(int groupId) {
     for (const Task& t : allTasks) {
         if (t.getGroupId() == groupId) {
             TaskCard* card = new TaskCard(t, groupName);
-            connect(card, &TaskCard::taskStateChanged, this, [this]() {
-                emit tasksChanged();
-            });
+
 
             connect(card, &TaskCard::editRequested, this, [this, t, groupId]() {
                 EditTaskDialog* dialog = new EditTaskDialog(t, this);
-                connect(dialog, &EditTaskDialog::taskUpdated, this, [this, groupId]() {
-                    loadTasks(groupId);
-                    emit tasksChanged();
-                });
                 dialog->exec();
             });
             tasksLayout->addWidget(card);
         }
     }
-
     tasksLayout->addStretch();
 }

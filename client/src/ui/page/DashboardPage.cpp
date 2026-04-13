@@ -81,7 +81,7 @@ void DashboardPage::refreshTaskCards() {
 void DashboardPage::refreshPinnedGroups() {
     QLayoutItem* item;
     while ((item = pinnedGroupsLayout->takeAt(0)) != nullptr) {
-        if (item->widget()) delete item->widget();
+        if (item->widget()) item->widget()->deleteLater();
         delete item;
     }
     const std::vector<StudyGroup>& allGroups = ClientState::getStudyGroups();
