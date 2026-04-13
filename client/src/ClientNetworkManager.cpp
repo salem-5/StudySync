@@ -79,3 +79,8 @@ void ClientNetworkManager::ping(std::function<void(bool)> callback) {
         callback(success);
     });
 }
+
+void ClientNetworkManager::disconnect() { tcpClient.disconnect(); }
+void ClientNetworkManager::setServerAddress(const std::string& host, const std::string& port) {
+    tcpClient.setServerAddress(host, port);
+}

@@ -5,7 +5,7 @@
 #include "ui/ClientState.h"
 #include "LanguageManager.h"
 
-GroupCard::GroupCard(const StudyGroup& group, bool isPinned, QWidget* parent) : QFrame(parent) {
+GroupCard::GroupCard(const StudyGroup& group, bool isPinned, bool showManageOptions, QWidget* parent) : QFrame(parent) {
     setAttribute(Qt::WA_StyledBackground, true);
     setProperty("cssClass", "card");
 
@@ -35,31 +35,30 @@ GroupCard::GroupCard(const StudyGroup& group, bool isPinned, QWidget* parent) : 
     headerLayout->addStretch();
     headerLayout->addWidget(btnPin);
 
+    if (showManageOptions) {
+        QPushButton* btnDelete = new QPushButton(LanguageManager::tr("group.delete"));
+        headerLayout->addWidget(btnDelete);
+        btnDelete->setCursor(Qt::PointingHandCursor);
+        connect(btnDelete, &QPushButton::clicked, this, [this, id = group.getId()]() {
+            QMessageBox::StandardButton reply = QMessageBox::question(
+                this,
+                LanguageManager::tr("group.delete_confirm_title"),
+                LanguageManager::tr("group.delete_confirm_msg"),
+                QMessageBox::Yes | QMessageBox::No
+            );
+
+            if (reply == QMessageBox::Yes) {
+                emit deleteRequested(id);
+            }
+        });
+    }
+
     size_t memberCount = group.getMemberIds().size();
     QLabel* members = new QLabel(LanguageManager::tr("group.members_count").arg(memberCount));
-    members->setObjectName("members");
 
-    QPushButton* btnManageMembers = new QPushButton(LanguageManager::tr("group.manage_members"));
     QPushButton* btnChat = new QPushButton(LanguageManager::tr("group.open_chat"));
     QPushButton* btnTasks = new QPushButton(LanguageManager::tr("group.open_tasks"));
-    QPushButton* btnDelete = new QPushButton(LanguageManager::tr("group.delete"));
-    headerLayout->addWidget(btnDelete);
-    btnDelete->setCursor(Qt::PointingHandCursor);
-    connect(btnDelete, &QPushButton::clicked, this, [this, id = group.getId()]() {
-        QMessageBox::StandardButton reply = QMessageBox::question(
-            this,
-            LanguageManager::tr("group.delete_confirm_title"),
-            LanguageManager::tr("group.delete_confirm_msg"),
-            QMessageBox::Yes | QMessageBox::No
-        );
 
-        if (reply == QMessageBox::Yes) {
-            emit deleteRequested(id);
-        }
-    });
-    connect(btnManageMembers, &QPushButton::clicked, this, [this, id = group.getId()]() {
-        emit manageMembersRequested(id);
-    });
     connect(btnChat, &QPushButton::clicked, this, [this, id = group.getId()]() {
         emit openChatRequested(id);
     });
@@ -68,9 +67,18 @@ GroupCard::GroupCard(const StudyGroup& group, bool isPinned, QWidget* parent) : 
     });
 
     QHBoxLayout* actionsLayout = new QHBoxLayout();
-    actionsLayout->addWidget(btnManageMembers);
+
+    if (showManageOptions) {
+        QPushButton* btnManageMembers = new QPushButton(LanguageManager::tr("group.manage_members"));
+        actionsLayout->addWidget(btnManageMembers);
+        connect(btnManageMembers, &QPushButton::clicked, this, [this, id = group.getId()]() {
+            emit manageMembersRequested(id);
+        });
+    }
+
     actionsLayout->addWidget(btnChat);
     actionsLayout->addWidget(btnTasks);
+
     layout->addLayout(headerLayout);
     layout->addWidget(members);
     layout->addLayout(actionsLayout);

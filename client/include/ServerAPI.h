@@ -24,6 +24,8 @@ public:
     void cancelInvite(int groupId, int userId, std::function<void(bool)> callback);
     void acceptInvite(int groupId, int userId, std::function<void(bool)> callback);
     void denyInvite(int groupId, int userId, std::function<void(bool)> callback);
+    void disconnect();
+    void setServerAddress(const std::string &host, const std::string &port);
 
     void createTask(int groupId, const std::string& title, const std::string& category, int assigneeId, std::function<void(bool, int)> callback);
     void editTask(int taskId, const std::string& title, const std::string& tag, int assigneeId, std::function<void(bool)> callback);

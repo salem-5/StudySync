@@ -12,7 +12,7 @@
 class GroupCard : public QFrame {
     Q_OBJECT
 public:
-    GroupCard(const StudyGroup& group, bool isPinned, QWidget* parent = nullptr);
+GroupCard(const StudyGroup& group, bool isPinned, bool showManageOptions = true, QWidget* parent = nullptr);
 signals:
     void openChatRequested(int groupId);
     void pinStateChanged();

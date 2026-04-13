@@ -12,6 +12,11 @@ public:
     void setOnConnectCallback(std::function<void()> callback);
     // endpoints like a rest api
     void ping(std::function<void(bool success)> callback);
+
+    void disconnect();
+
+    void setServerAddress(const std::string &host, const std::string &port);
+
     void onMessageReceived(const std::string& message);
     void sendRequest(const std::string& command, boost::json::object payload, std::function<void(const boost::json::object&)> callback);
 

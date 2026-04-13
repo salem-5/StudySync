@@ -4,7 +4,10 @@
 #include <QApplication>
 #include <QFile>
 #include <QScreen>
-
+#include <QComboBox>
+#include <QMessageBox>
+#include <QSettings>
+#include <QProcess>
 #include "ui/ClientState.h"
 #include "ui/widget/CreateTaskDialog.h"
 #include "LanguageManager.h"
@@ -111,6 +114,42 @@ void MainWindow::setupSidebar() {
     layout->addWidget(btnAiTutor);
     layout->addStretch();
 
+    QComboBox* languageSelector = new QComboBox(this);
+    languageSelector->addItem("English", "en_us");
+    languageSelector->addItem("العربية", "ar_sa");
+
+    QSettings settings("StudySync", "ClientApp");
+    QString currentLang = settings.value("language", "en_us").toString();
+    int index = languageSelector->findData(currentLang);
+    if (index != -1) {
+        languageSelector->setCurrentIndex(index);
+    }
+
+    connect(languageSelector, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this, languageSelector](int idx) {
+        QString selectedLang = languageSelector->itemData(idx).toString();
+        QSettings settings("StudySync", "ClientApp");
+
+        if (settings.value("language", "en_us").toString() == selectedLang) return;
+
+        QMessageBox::StandardButton reply;
+        reply = QMessageBox::question(this, LanguageManager::tr("dialog.restart_title"),LanguageManager::tr("dialog.restart_msg"),QMessageBox::Yes | QMessageBox::No);
+        if (reply == QMessageBox::Yes) {
+            settings.setValue("language", selectedLang);
+            QProcess::startDetached(QCoreApplication::applicationFilePath(), QStringList());
+            qApp->quit();
+        } else {
+            QString oldLang = settings.value("language", "en_us").toString();
+            int oldIndex = languageSelector->findData(oldLang);
+            if (oldIndex != -1) {
+                languageSelector->blockSignals(true);
+                languageSelector->setCurrentIndex(oldIndex);
+                languageSelector->blockSignals(false);
+            }
+        }
+    });
+
+    layout->addWidget(languageSelector);
+
     btnLogout = new QPushButton(LanguageManager::tr("nav.logout"), this);
     layout->addWidget(btnLogout);
 }
@@ -143,6 +182,10 @@ void MainWindow::setupTopbar() {
 }
 
 void MainWindow::connectSignals() {
+    connect(btnLogout, &QPushButton::clicked, this, [this]() {
+        if (ClientState::getApi()) ClientState::getApi()->disconnect();
+        qApp->exit(42); //leave the event loop when we logout
+    });
     connect(ClientNotifier::instance(), &ClientNotifier::groupsChanged, this, &MainWindow::groupsChanged);
     connect(ClientNotifier::instance(), &ClientNotifier::tasksChanged, this, &MainWindow::tasksChanged);
     connect(createTaskBtn, &QPushButton::clicked, this, &MainWindow::openCreateTaskDialog);

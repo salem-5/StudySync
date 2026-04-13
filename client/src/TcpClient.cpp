@@ -34,6 +34,34 @@ void TcpClient::send(const std::string& msg) {
     });
 }
 
+void TcpClient::disconnect() {
+    boost::asio::post(ioContext, [this]() {
+        connected = false;
+        boost::system::error_code ec;
+        socket.close(ec);
+        reconnectTimer.cancel();
+
+        std::queue<std::string> emptyQueue;
+        std::swap(writeQueue, emptyQueue);
+    });
+}
+
+void TcpClient::setServerAddress(const std::string& new_host, const std::string& new_port) {
+    boost::asio::post(ioContext, [this, new_host, new_port]() {
+        host = new_host;
+        port = new_port;
+        connected = false;
+        boost::system::error_code ec;
+        socket.close(ec);
+        reconnectTimer.cancel();
+
+        std::queue<std::string> emptyQueue;
+        std::swap(writeQueue, emptyQueue);
+
+        connect();
+    });
+}
+
 void TcpClient::connect() {
     std::cout << "connecting to " << host << ":" << port << std::endl;
     resolver.async_resolve(host, port,

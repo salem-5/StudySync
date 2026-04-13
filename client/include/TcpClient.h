@@ -21,6 +21,8 @@ public:
 
     void send(const std::string& msg);
     bool isConnected() const;
+    void setServerAddress(const std::string& new_host, const std::string& new_port);
+    void disconnect();
 
 private:
     void connect();

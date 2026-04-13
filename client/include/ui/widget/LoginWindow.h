@@ -6,6 +6,9 @@
 #include <QVBoxLayout>
 #include <QFormLayout>
 #include <QLabel>
+#include <QGroupBox>
+#include <QCheckBox>
+#include <QSettings>
 #include <memory>
 #include "ServerAPI.h"
 
@@ -29,10 +32,15 @@ private:
 
     QLineEdit* loginUsernameInput;
     QLineEdit* loginPasswordInput;
+    QCheckBox* rememberCheck;
     QPushButton* loginBtn;
 
     QLineEdit* regUsernameInput;
     QLineEdit* regEmailInput;
     QLineEdit* regPasswordInput;
     QPushButton* regBtn;
+
+    QGroupBox* advancedGroup;
+    QLineEdit* ipInput;
+    QLineEdit* portInput;
 };

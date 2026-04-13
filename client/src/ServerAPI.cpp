@@ -189,3 +189,8 @@ void ServerAPI::denyInvite(int groupId, int userId, std::function<void(bool)> ca
         if (callback) callback(success);
     });
 }
+
+void ServerAPI::disconnect() { network->disconnect(); }
+void ServerAPI::setServerAddress(const std::string& host, const std::string& port) {
+    network->setServerAddress(host, port);
+}

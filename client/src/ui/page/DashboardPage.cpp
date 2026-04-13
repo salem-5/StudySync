@@ -88,7 +88,7 @@ void DashboardPage::refreshPinnedGroups() {
     for (const StudyGroup& group : allGroups) {
         if (!ClientState::isGroupPinned(group.getId()))
             continue;
-        GroupCard* pinnedCard = new GroupCard(group, true);
+        GroupCard* pinnedCard = new GroupCard(group, true, false);
         connect(pinnedCard, &GroupCard::openChatRequested, this, &DashboardPage::openGroupChatRequested);
         connect(pinnedCard, &GroupCard::openTasksRequested, this, &DashboardPage::openGroupTasksRequested);
         connect(pinnedCard, &GroupCard::pinStateChanged, this, &DashboardPage::refreshPinnedGroups);

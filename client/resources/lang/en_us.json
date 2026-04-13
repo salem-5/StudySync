@@ -87,5 +87,16 @@
   "auth.status.reg_success": "Registration successful! Please log in.",
   "auth.error.missing_credentials": "Please enter username and password.",
   "auth.error.missing_fields": "All fields are required.",
-  "auth.error.reg_failed": "Registration failed. Username may exist."
+  "auth.error.reg_failed": "Registration failed. Username may exist.",
+  "auth.placeholder.username": "Username",
+  "auth.placeholder.password": "Password",
+  "auth.placeholder.email": "Email Address",
+  "auth.remember_me": "Remember Me",
+  "auth.advanced_options": "Advanced Server Options",
+  "auth.ip_address": "IP Address:",
+  "auth.port": "Port:",
+  "auth.status.connecting": "Connecting to server...",
+  "auth.error.login_failed": "Login failed",
+  "dialog.restart_title": "Restart Required",
+  "dialog.restart_msg": "Changing the language requires the application to restart. Do you want to restart now?"
 }
