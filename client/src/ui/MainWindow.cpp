@@ -117,6 +117,7 @@ void MainWindow::setupSidebar() {
     QComboBox* languageSelector = new QComboBox(this);
     languageSelector->addItem("English", "en_us");
     languageSelector->addItem("العربية", "ar_sa");
+    languageSelector->addItem("Français", "fr_fr");
 
     QSettings settings("StudySync", "ClientApp");
     QString currentLang = settings.value("language", "en_us").toString();

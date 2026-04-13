@@ -4,6 +4,7 @@
         <file>resources/studysync_logo.png</file>
         <file>resources/lang/en_us.json</file>
         <file>resources/lang/ar_sa.json</file>
+        <file>resources/lang/fr_fr.json</file>
         <file>resources/themeStyle.css</file>
         <file>resources/icons/CheckBox.png</file>
         <file>resources/icons/CheckBoxDisabled.png</file>
