@@ -37,6 +37,10 @@ public:
     void addMessage(int groupId, int userId, const std::string& text);
     int createUser(const std::string& username, const std::string& email, const std::string& password);
     void deleteUser(int userId);
+
+    bool validateLogin(const std::string& username, const std::string& password, int& outUserId);
+    void createTemplateForUser(int userId);
+    LoginPayload getFullUserData(int userId, const std::string& sessionToken);
 private:
     Database();
     ~Database();

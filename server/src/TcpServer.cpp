@@ -63,16 +63,31 @@ void TcpConnection::handleMessage(const std::string& msg) {
             std::string password = obj.at("password").as_string().c_str();
 
             int newId = Database::getInstance().createUser(username, email, password);
-
             if (newId != -1) {
+                Database::getInstance().createTemplateForUser(newId);
                 response["status"] = "success";
-
-                User newUser(newId, username, email, password, false);
-                response["user"] = newUser.toSafeJson();
+                response["message"] = "User created successfully";
                 response["sync_counter"] = Database::getInstance().getSyncCounter();
             } else {
                 response["status"] = "error";
                 response["message"] = "Username already exists.";
+            }
+        }
+        else if (cmd == "login") {
+            std::string username = obj.at("username").as_string().c_str();
+            std::string password = obj.at("password").as_string().c_str();
+
+            int userId = -1;
+            if (Database::getInstance().validateLogin(username, password, userId)) {
+                response["status"] = "success";
+
+                std::string token = "session_" + std::to_string(userId) + "_" + std::to_string(time(0));
+                LoginPayload payload = Database::getInstance().getFullUserData(userId, token);
+                response["payload"] = payload.toJson();
+                response["sync_counter"] = Database::getInstance().getSyncCounter();
+            } else {
+                response["status"] = "error";
+                response["message"] = "Invalid username or password.";
             }
         }
         else if (cmd == "deleteUser") {
