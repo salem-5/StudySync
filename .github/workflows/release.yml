@@ -48,7 +48,7 @@ jobs:
       - if: matrix.os_name == 'linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libboost-all-dev
+          sudo apt-get install -y libboost-all-dev libgtest-dev
           
       - if: matrix.os_name == 'linux'
         uses: jurplel/install-qt-action@v4
@@ -57,7 +57,7 @@ jobs:
 
       - if: matrix.os_name == 'macos'
         run: |
-          brew install qt@6 boost
+          brew install qt@6 boost googletest
           brew link --force qt@6
 
       - name: Configure and Build
@@ -70,6 +70,12 @@ jobs:
             cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
           fi
           cmake --build build --config Release --parallel
+
+      - name: Run Tests
+        shell: bash
+        run: |
+          cd build
+          ctest --output-on-failure -C Release
 
       - name: Stage binaries
         shell: bash
