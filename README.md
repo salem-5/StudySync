@@ -30,8 +30,8 @@ Track progress and planned features here:
 https://trello.com/b/FurIPhe7/study-sync
 
 ## Credits & Acknowledgements
-* Initial SQLite database schema was generated using SQLAlchemy in python and then manually integrated into the C++ application.
-
+* **Styling:** CSS styling used is from the [Prism Launcher Fluent-Dark theme](https://github.com/PrismLauncher/Themes/blob/main/themes/Fluent-Dark/themeStyle.css).
+* **Database:** Initial SQLite database schema was generated using SQLAlchemy in python and then manually integrated into the C++ application.
 ## Building
 Run this command in your terminal to build both the client and the server:
 ```bash
