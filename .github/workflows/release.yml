@@ -8,18 +8,23 @@ permissions:
 
 jobs:
   get-version:
+    name: Extract Version
     runs-on: ubuntu-latest
     outputs:
       VERSION: ${{ steps.extract.outputs.VERSION }}
     steps:
-      - uses: actions/checkout@v4
-      
-      - id: extract
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from CMakeLists.txt
+        id: extract
         run: |
-          VERSION=$(grep -oP '(?<=VERSION\s)[0-9.]+' CMakeLists.txt | head -n 1)
+          # Specifically looks for VERSION on the line containing the 'project' command
+          VERSION=$(grep -i "project" CMakeLists.txt | grep -oP 'VERSION\s+\K[0-9.]+')
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
   build:
+    name: Build ${{ matrix.os_name }} (${{ matrix.arch }})
     needs: get-version
     runs-on: ${{ matrix.runner }}
     strategy:
@@ -29,40 +34,34 @@ jobs:
           - runner: ubuntu-24.04
             os_name: linux
             arch: amd64
-            ext: ""
           - runner: ubuntu-24.04-arm
             os_name: linux
             arch: arm64
-            ext: ""
           - runner: macos-latest
             os_name: macos
             arch: arm64
-            ext: ""
 
     steps:
-      - uses: actions/checkout@v4
-
-      - if: matrix.os_name == 'linux'
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - if: matrix.os_name == 'linux'
-        uses: jurplel/install-qt-action@v4
-        with:
-          version: '6.8.0'
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - if: matrix.os_name == 'linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y libboost-all-dev
+          
+      - if: matrix.os_name == 'linux'
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.0'
 
       - if: matrix.os_name == 'macos'
         run: |
           brew install qt@6 boost
           brew link --force qt@6
 
-      - shell: bash
+      - name: Configure and Build
+        shell: bash
         run: |
           if [ "${{ matrix.os_name }}" == "macos" ]; then
             QT_PREFIX=$(brew --prefix qt@6)
@@ -70,40 +69,48 @@ jobs:
           else
             cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
           fi
+          cmake --build build --config Release --parallel
 
-      - run: cmake --build build --config Release --parallel
-
-      - shell: bash
+      - name: Stage binaries
+        shell: bash
         run: |
           mkdir -p staging
+          # Check common build locations for single-config generators (Linux/Mac)
           if [ -f "build/server/studysync_server" ]; then
             cp "build/server/studysync_server" "staging/studysync_server-${{ matrix.os_name }}-${{ matrix.arch }}"
             cp "build/client/studysync_client" "staging/studysync_client-${{ matrix.os_name }}-${{ matrix.arch }}"
           else
-            echo "Binary not found in root build folder, checking subdirectories..."
+            # Fallback search if paths differ
             find build -name "studysync_server" -exec cp {} "staging/studysync_server-${{ matrix.os_name }}-${{ matrix.arch }}" \;
             find build -name "studysync_client" -exec cp {} "staging/studysync_client-${{ matrix.os_name }}-${{ matrix.arch }}" \;
           fi
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: binaries-${{ matrix.os_name }}-${{ matrix.arch }}
           path: staging/*
           retention-days: 1
 
   release:
+    name: Create GitHub Release
     needs: [get-version, build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Checkout code (to access changelog.md)
+        uses: actions/checkout@v4
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
         with:
           path: artifacts
           pattern: binaries-*
           merge-multiple: true
 
-      - uses: softprops/action-gh-release@v2
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ needs.get-version.outputs.VERSION }}
           name: Release v${{ needs.get-version.outputs.VERSION }}
+          body_path: changelog.md
           files: artifacts/*
-          generate_release_notes: true
