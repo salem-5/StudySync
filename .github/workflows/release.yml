@@ -1,0 +1,164 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  get-version:
+    name: Extract Version
+    runs-on: ubuntu-latest
+    outputs:
+      VERSION: ${{ steps.extract.outputs.VERSION }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from CMakeLists.txt
+        id: extract
+        run: |
+          VERSION=$(grep -oP '(?<=VERSION\s)[0-9.]+' CMakeLists.txt | head -n 1)
+          echo "Found version: $VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+  build:
+    name: Build ${{ matrix.os_name }} (${{ matrix.arch }})
+    needs: get-version
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # --- Linux (Using Native ARM & AMD64 Runners) ---
+          - runner: ubuntu-latest
+            os_name: linux
+            arch: amd64
+            cmake_args: ""
+            ext: ""
+          - runner: ubuntu-24.04-arm
+            os_name: linux
+            arch: arm64
+            cmake_args: ""
+            ext: ""
+
+          # --- macOS (Intel macOS-13 & Apple Silicon macOS-14) ---
+          - runner: macos-13
+            os_name: macos
+            arch: amd64
+            cmake_args: ""
+            ext: ""
+          - runner: macos-14
+            os_name: macos
+            arch: arm64
+            cmake_args: ""
+            ext: ""
+
+          # --- Windows (Using x64 runner to compile both) ---
+          - runner: windows-latest
+            os_name: windows
+            arch: amd64
+            qt_arch: win64_msvc2022_64
+            cmake_args: "-A x64"
+            ext: ".exe"
+          - runner: windows-latest
+            os_name: windows
+            arch: arm64
+            qt_arch: win64_msvc2022_arm64
+            cmake_args: "-A ARM64"
+            ext: ".exe"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ---------------------------------------------------------
+      # DEPENDENCY INSTALLATION
+      # ---------------------------------------------------------
+
+      - name: Install Qt and Boost (Linux)
+        if: matrix.os_name == 'linux'
+        run: |
+          sudo apt-get update
+          # Because we use native AMD64/ARM runners, apt automatically pulls the correct architecture
+          sudo apt-get install -y qt6-base-dev libboost-all-dev
+
+      - name: Install Qt and Boost (macOS)
+        if: matrix.os_name == 'macos'
+        run: |
+          # Homebrew natively handles architectures depending on if it's the M1 or Intel runner
+          brew install qt@6 boost
+          brew link --force qt@6
+
+      - name: Install Qt (Windows)
+        if: matrix.os_name == 'windows'
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.0' # Qt 6.8 is required because it is the first version with official Windows ARM64 binaries
+          arch: ${{ matrix.qt_arch }}
+
+      - name: Install Boost (Windows)
+        if: matrix.os_name == 'windows'
+        uses: MarkusJx/install-boost@v2
+        id: install-boost
+        with:
+          boost_version: 1.83.0
+          platform_version: 2022
+
+      # ---------------------------------------------------------
+      # BUILD AND STAGE
+      # ---------------------------------------------------------
+
+      - name: Configure CMake
+        # Passes the -A flag on Windows so MSVC knows whether to compile x64 or ARM64
+        run: cmake -B build -S . ${{ matrix.cmake_args }} -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Stage binaries
+        shell: bash
+        run: |
+          mkdir -p staging
+          
+          if [ -f "build/server/Release/server${{ matrix.ext }}" ]; then
+            cp "build/server/Release/server${{ matrix.ext }}" "staging/server-${{ matrix.os_name }}-${{ matrix.arch }}${{ matrix.ext }}"
+            cp "build/client/Release/client${{ matrix.ext }}" "staging/client-${{ matrix.os_name }}-${{ matrix.arch }}${{ matrix.ext }}"
+          elif [ -f "build/server/server${{ matrix.ext }}" ]; then
+            cp "build/server/server${{ matrix.ext }}" "staging/server-${{ matrix.os_name }}-${{ matrix.arch }}${{ matrix.ext }}"
+            cp "build/client/client${{ matrix.ext }}" "staging/client-${{ matrix.os_name }}-${{ matrix.arch }}${{ matrix.ext }}"
+          else
+            echo "Error: Could not locate built binaries!"
+            exit 1
+          fi
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{ matrix.os_name }}-${{ matrix.arch }}
+          path: staging/*
+          retention-days: 1
+
+  release:
+    name: Create GitHub Release
+    needs: [get-version, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: binaries-*
+          merge-multiple: true
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.get-version.outputs.VERSION }}
+          name: Release v${{ needs.get-version.outputs.VERSION }}
+          files: artifacts/*
+          generate_release_notes: true
