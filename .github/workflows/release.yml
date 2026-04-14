@@ -65,6 +65,11 @@ jobs:
         run: |
           if [ "${{ matrix.os_name }}" == "macos" ]; then
             QT_PREFIX=$(brew --prefix qt@6)
+            # Fetch the base homebrew prefix to locate googletest headers/libs
+            BREW_PREFIX=$(brew --prefix)
+            export CXXFLAGS="-I${BREW_PREFIX}/include"
+            export LDFLAGS="-L${BREW_PREFIX}/lib"
+            
             cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_PREFIX"
           else
             cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
