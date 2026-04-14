@@ -2,12 +2,6 @@
 #include <string>
 #include <vector>
 
-//
-// ============================
-// 🌐 Mock Networking Layer
-// ============================
-//
-
 class INetwork {
 public:
     virtual std::string sendRequest(const std::string& req) = 0;
@@ -24,11 +18,6 @@ public:
     }
 };
 
-//
-// ============================
-// 🔐 Auth Service
-// ============================
-//
 
 class AuthService {
     INetwork* net;
@@ -46,12 +35,6 @@ public:
         return net->sendRequest("login") == "success";
     }
 };
-
-//
-// ============================
-// 📋 Task
-// ============================
-//
 
 class Task {
     std::string title;
@@ -72,12 +55,6 @@ public:
         return assignedUser;
     }
 };
-
-//
-// ============================
-// 👥 Group
-// ============================
-//
 
 class Group {
     std::string name;
@@ -102,12 +79,6 @@ public:
     }
 };
 
-//
-// ============================
-// 💬 Chat
-// ============================
-//
-
 class Chat {
     std::vector<std::string> messages;
 
@@ -122,12 +93,6 @@ public:
     }
 };
 
-//
-// ============================
-// ⏱ Timer
-// ============================
-//
-
 class Timer {
     bool running = false;
 
@@ -140,12 +105,6 @@ public:
         return running;
     }
 };
-
-//
-// ============================
-// 🧪 UNIT TESTS (10)
-// ============================
-//
 
 // 1. Signup success
 TEST(AuthTest, SignupValid) {
