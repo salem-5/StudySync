@@ -73,28 +73,30 @@ void ClientNetworkManager::sendRequest(const std::string& command, boost::json::
 
     tcpClient.send(boost::json::serialize(payload));
 
-    std::thread([this, reqId]() {
+    std::weak_ptr<ClientNetworkManager> weakSelf = weak_from_this();
+    std::thread([weakSelf, reqId]() {
         std::this_thread::sleep_for(std::chrono::seconds(5));
 
-        std::function<void(const boost::json::object&)> timeoutCb;
-        {
-            std::lock_guard<std::mutex> lock(callbacksMutex);
-            auto it = pending_requests_.find(reqId);
-            if (it != pending_requests_.end()) {
-                timeoutCb = it->second;
-                pending_requests_.erase(it);
+        if (auto self = weakSelf.lock()) {
+            std::function<void(const boost::json::object&)> timeoutCb;
+            {
+                std::lock_guard<std::mutex> lock(self->callbacksMutex);
+                auto it = self->pending_requests_.find(reqId);
+                if (it != self->pending_requests_.end()) {
+                    timeoutCb = it->second;
+                    self->pending_requests_.erase(it);
+                }
             }
-        }
-        if (timeoutCb) {
-            boost::json::object errorPayload;
-            errorPayload["req_id"] = reqId;
-            errorPayload["status"] = "error";
-            errorPayload["message"] = "Connection timed out after 5 seconds.";
-            timeoutCb(errorPayload);
+            if (timeoutCb) {
+                boost::json::object errorPayload;
+                errorPayload["req_id"] = reqId;
+                errorPayload["status"] = "error";
+                errorPayload["message"] = "Connection timed out after 5 seconds.";
+                timeoutCb(errorPayload);
+            }
         }
     }).detach();
 }
-
 void ClientNetworkManager::ping(std::function<void(bool)> callback) {
     boost::json::object payload;
 

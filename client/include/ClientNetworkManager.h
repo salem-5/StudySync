@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <atomic>
 
-class ClientNetworkManager {
+class ClientNetworkManager : public std::enable_shared_from_this<ClientNetworkManager> {
 public:
     ClientNetworkManager(const std::string& host, const std::string& port);
 
