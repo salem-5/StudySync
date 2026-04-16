@@ -140,7 +140,7 @@ void LoginWindow::setupUi() {
 void LoginWindow::handleLogin() {
     bool isCustomServer = (serverTypeCombo->currentIndex() == 1);
 
-    if (!isCustomServer) serverApi->setServerAddress("studysync.site", "80");
+    if (!isCustomServer) serverApi->setServerAddress("server.studysync.site", "2452");
     else serverApi->setServerAddress(ipInput->text().toStdString(), portInput->text().toStdString());
 
     QString username = loginUsernameInput->text();
