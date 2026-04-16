@@ -1,5 +1,6 @@
 #pragma once
 #include <map>
+#include <cstdint>
 
 struct Config {
     uint16_t port = 2452;

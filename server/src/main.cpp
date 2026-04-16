@@ -1,6 +1,7 @@
 #include <iostream>
 #include <boost/asio.hpp>
 #include <TcpServer.h>
+#include <cstdint>
 #include "Database.h"
 #include "CmdParser.h"
 

@@ -1,6 +1,7 @@
 #include "CmdParser.h"
 #include <iostream>
 #include <string>
+#include <cstdint>
 #include <vector>
 
 void printHelp() {
