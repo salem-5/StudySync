@@ -104,5 +104,9 @@
   "group.confirm_remove_title": "Retirer le membre",
   "group.confirm_leave_msg": "Êtes-vous sûr de vouloir quitter ce groupe ?",
   "group.confirm_remove_msg": "Êtes-vous sûr de vouloir retirer %1 du groupe ?",
-  "auth.error.bad_email": "E-mail invalide"
+  "auth.error.bad_email": "E-mail invalide",
+  "auth.server_public": "Utiliser le serveur public",
+  "auth.server_custom": "Utiliser un serveur personnalisé",
+  "auth.status.using_public": "Utilisation du serveur public",
+  "auth.status.custom_server": "Utilisation d'un serveur personnalisé"
 }

@@ -1,6 +1,9 @@
 #include "ui/widget/LoginWindow.h"
 #include "LanguageManager.h"
 #include <QMetaObject>
+#include <QSettings>
+#include <QComboBox>
+#include <QFrame>
 #include <regex>
 
 LoginWindow::LoginWindow(std::shared_ptr<ServerAPI> api, QWidget *parent)
@@ -10,7 +13,7 @@ LoginWindow::LoginWindow(std::shared_ptr<ServerAPI> api, QWidget *parent)
 
 void LoginWindow::setupUi() {
     this->setWindowTitle(LanguageManager::tr("app.auth_title"));
-    this->setFixedSize(400, 520);
+    this->setFixedSize(400, 560);
 
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(30, 30, 30, 30);
@@ -72,30 +75,61 @@ void LoginWindow::setupUi() {
     tabWidget->addTab(registerTab, LanguageManager::tr("auth.tab_register"));
     mainLayout->addWidget(tabWidget);
 
-    advancedGroup = new QGroupBox(LanguageManager::tr("auth.advanced_options"), this);
-    advancedGroup->setCheckable(true);
-    advancedGroup->setChecked(false);
-    QFormLayout* advLayout = new QFormLayout(advancedGroup);
+    QFrame* serverCard = new QFrame(this);
+    serverCard->setObjectName("serverCard");
+    serverCard->setStyleSheet("QFrame#serverCard { background-color: rgba(255, 255, 255, 0.05); border-radius: 6px; }");
+    QVBoxLayout* cardLayout = new QVBoxLayout(serverCard);
+    cardLayout->setContentsMargins(15, 15, 15, 15);
+    cardLayout->setSpacing(10);
 
-    ipInput = new QLineEdit(this);
-    portInput = new QLineEdit(this);
+    serverTypeCombo = new QComboBox(serverCard);
+    serverTypeCombo->addItem(LanguageManager::tr("auth.server_public"));
+    serverTypeCombo->addItem(LanguageManager::tr("auth.server_custom"));
+    cardLayout->addWidget(serverTypeCombo);
+    customServerContainer = new QWidget(serverCard);
+    QFormLayout* customLayout = new QFormLayout(customServerContainer);
+    customLayout->setContentsMargins(0, 0, 0, 0);
 
-    advLayout->addRow(LanguageManager::tr("auth.ip_address"), ipInput);
-    advLayout->addRow(LanguageManager::tr("auth.port"), portInput);
-    mainLayout->addWidget(advancedGroup);
+    ipInput = new QLineEdit(serverCard);
+    portInput = new QLineEdit(serverCard);
+
+    customLayout->addRow(LanguageManager::tr("auth.ip_address"), ipInput);
+    customLayout->addRow(LanguageManager::tr("auth.port"), portInput);
+    cardLayout->addWidget(customServerContainer);
+
+    mainLayout->addWidget(serverCard);
 
     statusLabel = new QLabel(this);
     statusLabel->setAlignment(Qt::AlignCenter);
+    statusLabel->setStyleSheet("color: white;");
     mainLayout->addWidget(statusLabel);
 
-    QSettings settings("StudySync", "ClientApp"); // save settings locally
+    QSettings settings("StudySync", "ClientApp");
     loginUsernameInput->setText(settings.value("username", "").toString());
     loginPasswordInput->setText(settings.value("password", "").toString());
     rememberCheck->setChecked(settings.value("remember", false).toBool());
+
+    bool useCustomServer = settings.value("use_custom_server", false).toBool();
+    serverTypeCombo->setCurrentIndex(useCustomServer ? 1 : 0);
+    customServerContainer->setVisible(useCustomServer);
+
     ipInput->setText(settings.value("ip", "127.0.0.1").toString());
     portInput->setText(settings.value("port", "8080").toString());
 
-    // fix bug on linux when using system light mode, using qt qss wiki as reference
+    if (!useCustomServer) {
+        statusLabel->setText(LanguageManager::tr("auth.status.using_public"));
+    } else {
+        statusLabel->setText(LanguageManager::tr("auth.status.custom_server"));
+    }
+
+    connect(serverTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
+        bool isCustom = (index == 1);
+        customServerContainer->setVisible(isCustom);
+        statusLabel->setStyleSheet("color: white;");
+        if (!isCustom) statusLabel->setText(LanguageManager::tr("auth.status.using_public"));
+        else statusLabel->setText(LanguageManager::tr("auth.status.custom_server"));
+    });
+
     tabWidget->setStyleSheet("QTabBar::tab { color: white; }");
     rememberCheck->setStyleSheet("QCheckBox { color: white; }");
 
@@ -104,18 +138,21 @@ void LoginWindow::setupUi() {
 }
 
 void LoginWindow::handleLogin() {
-    serverApi->setServerAddress(ipInput->text().toStdString(), portInput->text().toStdString());
+    bool isCustomServer = (serverTypeCombo->currentIndex() == 1);
+
+    if (!isCustomServer) serverApi->setServerAddress("studysync.site", "80");
+    else serverApi->setServerAddress(ipInput->text().toStdString(), portInput->text().toStdString());
 
     QString username = loginUsernameInput->text();
     QString password = loginPasswordInput->text();
 
     loginBtn->setEnabled(false);
-    statusLabel->setStyleSheet("color: #4d90fe;");
+    statusLabel->setStyleSheet("color: white;");
     statusLabel->setText(LanguageManager::tr("auth.status.connecting"));
 
     serverApi->login(username.toStdString(), password.toStdString(),
-        [this, username, password](bool success, const std::string& msg) {
-            QMetaObject::invokeMethod(this, [this, success, msg, username, password]() {
+        [this, username, password, isCustomServer](bool success, const std::string& msg) {
+            QMetaObject::invokeMethod(this, [this, success, msg, username, password, isCustomServer]() {
                 loginBtn->setEnabled(true);
                 if (success) {
                     QSettings settings("StudySync", "ClientApp");
@@ -128,8 +165,12 @@ void LoginWindow::handleLogin() {
                         settings.remove("password");
                         settings.setValue("remember", false);
                     }
-                    settings.setValue("ip", ipInput->text());
-                    settings.setValue("port", portInput->text());
+
+                    settings.setValue("use_custom_server", isCustomServer);
+                    if (isCustomServer) {
+                        settings.setValue("ip", ipInput->text());
+                        settings.setValue("port", portInput->text());
+                    }
 
                     accept();
                 } else {
@@ -142,6 +183,13 @@ void LoginWindow::handleLogin() {
 }
 
 void LoginWindow::handleRegistration() {
+    bool isCustomServer = (serverTypeCombo->currentIndex() == 1);
+    if (!isCustomServer) {
+        serverApi->setServerAddress("server.studysync.site", "2452");
+    } else {
+        serverApi->setServerAddress(ipInput->text().toStdString(), portInput->text().toStdString());
+    }
+
     QString username = regUsernameInput->text();
     QString email = regEmailInput->text();
     QString password = regPasswordInput->text();
@@ -160,7 +208,7 @@ void LoginWindow::handleRegistration() {
     }
 
     regBtn->setEnabled(false);
-    statusLabel->setStyleSheet("color: black;");
+    statusLabel->setStyleSheet("color: white;");
     statusLabel->setText(LanguageManager::tr("auth.status.registering"));
 
     serverApi->createUser(username.toStdString(), email.toStdString(), password.toStdString(),

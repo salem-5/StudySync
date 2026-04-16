@@ -104,5 +104,9 @@
   "group.confirm_remove_title": "إزالة العضو",
   "group.confirm_leave_msg": "هل أنت متأكد أنك تريد مغادرة هذه المجموعة؟",
   "group.confirm_remove_msg": "هل أنت متأكد أنك تريد إزالة %1 من المجموعة؟",
-  "auth.error.bad_email": "بريد إلكتروني غير صالح"
+  "auth.error.bad_email": "بريد إلكتروني غير صالح",
+  "auth.server_public": "استخدام خادم عام",
+  "auth.server_custom": "استخدام خادم مخصص",
+  "auth.status.using_public": "استخدام خادم عام",
+  "auth.status.custom_server": "استخدام خادم مخصص"
 }

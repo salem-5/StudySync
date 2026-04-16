@@ -1,8 +1,10 @@
 #include "MessageRouter.h"
 #include "Database.h"
 #include <string>
+#include <iostream>
 #include "ConnectionManager.h"
 #include <boost/asio/steady_timer.hpp>
+#include <boost/program_options.hpp>
 #include <chrono>
 #include <memory>
 #include <regex>

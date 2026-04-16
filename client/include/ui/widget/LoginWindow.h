@@ -5,6 +5,7 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QFormLayout>
+#include <QComboBox>
 #include <QLabel>
 #include <QGroupBox>
 #include <QCheckBox>
@@ -34,6 +35,8 @@ private:
     QLineEdit* loginPasswordInput;
     QCheckBox* rememberCheck;
     QPushButton* loginBtn;
+    QComboBox* serverTypeCombo;
+    QWidget* customServerContainer;
 
     QLineEdit* regUsernameInput;
     QLineEdit* regEmailInput;

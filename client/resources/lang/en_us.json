@@ -104,5 +104,9 @@
   "group.confirm_remove_title": "Remove Member",
   "group.confirm_leave_msg": "Are you sure you want to leave this group?",
   "group.confirm_remove_msg": "Are you sure you want to remove %1 from the group?",
-  "auth.error.bad_email": "Invalid Email"
+  "auth.error.bad_email": "Invalid Email",
+  "auth.server_public": "Use Public Server",
+  "auth.server_custom": "Use Custom Server",
+  "auth.status.using_public": "Using Public Server",
+  "auth.status.custom_server": "Using Custom Server"
 }
