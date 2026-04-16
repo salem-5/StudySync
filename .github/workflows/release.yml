@@ -57,7 +57,7 @@ jobs:
 
       - if: matrix.os_name == 'macos'
         run: |
-          brew install qt@6 boost googletest
+          brew install qt@6 boost
           brew link --force qt@6
 
       - name: Configure and Build
