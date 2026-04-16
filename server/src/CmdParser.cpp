@@ -1,28 +1,44 @@
 #include "CmdParser.h"
 #include <iostream>
+#include <string>
+#include <vector>
 
-namespace po = boost::program_options;
+void printHelp() {
+    std::cout << "Allowed options:\n"
+        << "  -h, --help           produce help message\n"
+        << "  -p, --port arg (=2452) set server port" << std::endl;
+}
 
-po::variables_map parseCommandLine(int argc, char* argv[]) {
-    po::options_description desc("Allowed options");
-    desc.add_options()
-        ("help,h", "produce help message")
-        ("port,p", po::value<uint16_t>()->default_value(2452), "set server port");
+Config parseCommandLine(int argc, char* argv[]) {
+    Config config;
+    std::vector<std::string> args(argv + 1, argv + argc);
 
-    po::variables_map vm;
-    try {
-        po::store(po::parse_command_line(argc, argv, desc), vm);
-        po::notify(vm);
+    for (size_t i = 0; i < args.size(); ++i) {
+        const std::string& arg = args[i];
 
-        if (vm.count("help")) {
-            std::cout << desc << std::endl;
+        if (arg == "-h" || arg == "--help") {
+            config.showHelp = true;
+            printHelp();
             exit(0);
         }
-    } catch (const po::error& e) {
-        std::cerr << "Command Line Error: " << e.what() << std::endl;
-        std::cerr << desc << std::endl;
-        exit(1);
+        if (arg == "-p" || arg == "--port") {
+            if (i + 1 < args.size()) {
+                try {
+                    config.port = static_cast<uint16_t>(std::stoul(args[++i]));
+                } catch (const std::exception& e) {
+                    std::cerr << "Command Line Error: Invalid port value." << std::endl;
+                    exit(1);
+                }
+            } else {
+                std::cerr << "Command Line Error: --port requires an argument." << std::endl;
+                exit(1);
+            }
+        } else {
+            std::cerr << "Command Line Error: Unknown option " << arg << std::endl;
+            printHelp();
+            exit(1);
+        }
     }
 
-    return vm;
+    return config;
 }

@@ -1,3 +1,9 @@
 #pragma once
-#include <boost/program_options.hpp>
-boost::program_options::variables_map parseCommandLine(int argc, char* argv[]);
+#include <map>
+
+struct Config {
+    uint16_t port = 2452;
+    bool showHelp = false;
+};
+
+Config parseCommandLine(int argc, char* argv[]);

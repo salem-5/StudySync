@@ -8,8 +8,8 @@ void registerServerRoutes();
 void startAutoRefreshTimer(boost::asio::io_context& io_context);
 
 int main(int argc, char* argv[]) {
-    auto vm = parseCommandLine(argc, argv);
-    uint16_t port = vm["port"].as<uint16_t>();
+    Config config = parseCommandLine(argc, argv);
+    uint16_t port = config.port;
     std::cout << "Server Starting on port " << port << "..." << std::endl;
 
     try {
