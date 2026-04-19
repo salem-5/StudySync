@@ -1,4 +1,14 @@
 #include "DataStructures.h"
+AiMessage::AiMessage(const std::string& role, const std::string& text, const std::vector<int>& attachments)
+    : role(role), text(text), attachments(attachments) {}
+
+std::string AiMessage::getRole() const { return role; }
+std::string AiMessage::getText() const { return text; }
+std::vector<int> AiMessage::getAttachments() const { return attachments; }
+
+void AiMessage::setRole(const std::string& role) { this->role = role; }
+void AiMessage::setText(const std::string& text) { this->text = text; }
+void AiMessage::setAttachments(const std::vector<int>& attachments) { this->attachments = attachments; }
 
 User::User(int id, const std::string& username, const std::string& email, const std::string& password, bool hasAiAccess)
     : id(id), username(username), email(email), password(password), hasAiAccess(hasAiAccess) {}

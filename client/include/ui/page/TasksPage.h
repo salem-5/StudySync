@@ -14,6 +14,8 @@ public:
 signals:
     void backToGroupsRequested();
     void tasksChanged();
+    void askAiRequested(int taskId);
+
 private:
     QVBoxLayout* tasksLayout;
     QGroupBox* group;

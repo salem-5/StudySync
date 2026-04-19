@@ -20,10 +20,20 @@ signals:
     void tasksChanged();
     void userChanged();
     void invitesChanged();
+    void aiResponseReceived(bool success, QString message);
 };
 
 class ClientState {
 public:
+    static std::deque<AiMessage> aiMessages;
+    static int aiCredits;
+
+    static const std::deque<AiMessage>& getAiMessages();
+    static int getAiCredits();
+    static void setAiCredits(int credits);
+    static void askAi(const std::string& text, const std::vector<int>& attachedTaskIds);
+    static void cancelAi();
+    static const Task* getTaskById(int id);
     static std::unique_ptr<User> currentUser;
     static std::vector<StudyGroup> studyGroups;
     static std::vector<Task> tasks;

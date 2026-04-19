@@ -2,6 +2,23 @@
 #include <string>
 #include <vector>
 #include <boost/json.hpp>
+class AiMessage {
+private:
+    std::string role;
+    std::string text;
+    std::vector<int> attachments;
+
+public:
+    AiMessage(const std::string& role, const std::string& text, const std::vector<int>& attachments = {});
+
+    std::string getRole() const;
+    std::string getText() const;
+    std::vector<int> getAttachments() const;
+
+    void setRole(const std::string& role);
+    void setText(const std::string& text);
+    void setAttachments(const std::vector<int>& attachments);
+};
 
 class User {
 private:

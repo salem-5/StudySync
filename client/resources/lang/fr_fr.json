@@ -108,5 +108,11 @@
   "auth.server_public": "Utiliser le serveur public",
   "auth.server_custom": "Utiliser un serveur personnalisé",
   "auth.status.using_public": "Utilisation du serveur public",
-  "auth.status.custom_server": "Utilisation d'un serveur personnalisé"
+  "auth.status.custom_server": "Utilisation d'un serveur personnalisé",
+  "chat.generating": "Génération...",
+  "chat.stop": "Arrêter",
+  "chat.add_task": "+ Ajouter une tâche",
+  "chat.waiting": "En attente de réponse...",
+  "chat.generation_canceled": "Génération annulée par l'utilisateur.",
+  "ai.no_tasks": "Aucune tâche disponible"
 }

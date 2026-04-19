@@ -10,6 +10,38 @@ std::unordered_map<int, std::string> ClientState::usernameCache;
 std::vector<StudyGroup> ClientState::pendingInvites;
 std::shared_ptr<ServerAPI> ClientState::apiInstance = nullptr;
 
+std::deque<AiMessage> ClientState::aiMessages;
+int ClientState::aiCredits = -1;
+
+const std::deque<AiMessage>& ClientState::getAiMessages() { return aiMessages; }
+int ClientState::getAiCredits() { return aiCredits; }
+
+void ClientState::setAiCredits(int credits) {
+    aiCredits = credits;
+    emit ClientNotifier::instance()->userChanged();
+}
+
+void ClientState::askAi(const std::string& text, const std::vector<int>& attachedTaskIds) {
+    if (aiCredits == 0) return;
+
+    aiMessages.emplace_back("user", text, attachedTaskIds);
+    if (aiCredits > 0) {
+        aiCredits--;
+        emit ClientNotifier::instance()->userChanged();
+    }
+    aiMessages.emplace_back("ai", "This is a simulated AI response.", std::vector<int>{});
+    emit ClientNotifier::instance()->aiResponseReceived(true, "This is a simulated AI response.");
+}
+void ClientState::cancelAi() {
+}
+const Task* ClientState::getTaskById(int id) {
+    for (const auto& task : tasks) {
+        if (task.getId() == id) {
+            return &task;
+        }
+    }
+    return nullptr;
+}
 void ClientState::setApi(std::shared_ptr<ServerAPI> newApi) { apiInstance = newApi; }
 std::shared_ptr<ServerAPI> ClientState::getApi() { return apiInstance; }
 const User* ClientState::getUser() { return currentUser.get(); }

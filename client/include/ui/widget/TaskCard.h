@@ -13,4 +13,5 @@ public:
 signals:
     void editRequested(int taskId);
     void taskStateChanged();
+    void askAiRequested(int id);
 };

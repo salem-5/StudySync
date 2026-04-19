@@ -48,9 +48,9 @@ void TasksPage::loadTasks(int groupId) {
     const std::vector<Task>& allTasks = ClientState::getTasks();
     for (const Task& t : allTasks) {
         if (t.getGroupId() == groupId) {
-            TaskCard* card = new TaskCard(t, groupName);
+            TaskCard* card = new TaskCard(t, groupName, this, true);
 
-
+            connect(card, &TaskCard::askAiRequested, this, &TasksPage::askAiRequested);
             connect(card, &TaskCard::editRequested, this, [this, t, groupId]() {
                 EditTaskDialog* dialog = new EditTaskDialog(t, this);
                 dialog->exec();

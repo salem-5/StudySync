@@ -4,12 +4,19 @@
 #include <QSettings>
 #include <QComboBox>
 #include <QFrame>
+#include <QStyle>
 #include <regex>
 
 LoginWindow::LoginWindow(std::shared_ptr<ServerAPI> api, QWidget *parent)
     : QDialog(parent), serverApi(api) {
     setupUi();
 }
+
+auto updateStatusStyle = [](QLabel* label, const char* state) {
+    label->setProperty("statusState", state);
+    label->style()->unpolish(label);
+    label->style()->polish(label);
+};
 
 void LoginWindow::setupUi() {
     this->setWindowTitle(LanguageManager::tr("app.auth_title"));
@@ -41,6 +48,8 @@ void LoginWindow::setupUi() {
     loginPasswordInput->setPlaceholderText(LanguageManager::tr("auth.placeholder.password"));
 
     rememberCheck = new QCheckBox(LanguageManager::tr("auth.remember_me"), this);
+    rememberCheck->setObjectName("rememberCheck");
+
     loginBtn = new QPushButton(LanguageManager::tr("auth.login_btn"), this);
     loginBtn->setCursor(Qt::PointingHandCursor);
 
@@ -77,7 +86,7 @@ void LoginWindow::setupUi() {
 
     QFrame* serverCard = new QFrame(this);
     serverCard->setObjectName("serverCard");
-    serverCard->setStyleSheet("QFrame#serverCard { background-color: rgba(255, 255, 255, 0.05); border-radius: 6px; }");
+
     QVBoxLayout* cardLayout = new QVBoxLayout(serverCard);
     cardLayout->setContentsMargins(15, 15, 15, 15);
     cardLayout->setSpacing(10);
@@ -100,8 +109,9 @@ void LoginWindow::setupUi() {
     mainLayout->addWidget(serverCard);
 
     statusLabel = new QLabel(this);
+    statusLabel->setObjectName("loginStatusLabel");
     statusLabel->setAlignment(Qt::AlignCenter);
-    statusLabel->setStyleSheet("color: white;");
+    updateStatusStyle(statusLabel, "normal");
     mainLayout->addWidget(statusLabel);
 
     QSettings settings("StudySync", "ClientApp");
@@ -125,13 +135,13 @@ void LoginWindow::setupUi() {
     connect(serverTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
         bool isCustom = (index == 1);
         customServerContainer->setVisible(isCustom);
-        statusLabel->setStyleSheet("color: white;");
+
+        updateStatusStyle(statusLabel, "normal");
+
         if (!isCustom) statusLabel->setText(LanguageManager::tr("auth.status.using_public"));
         else statusLabel->setText(LanguageManager::tr("auth.status.custom_server"));
     });
 
-    tabWidget->setStyleSheet("QTabBar::tab { color: white; }");
-    rememberCheck->setStyleSheet("QCheckBox { color: white; }");
 
     connect(loginBtn, &QPushButton::clicked, this, &LoginWindow::handleLogin);
     connect(regBtn, &QPushButton::clicked, this, &LoginWindow::handleRegistration);
@@ -147,7 +157,7 @@ void LoginWindow::handleLogin() {
     QString password = loginPasswordInput->text();
 
     loginBtn->setEnabled(false);
-    statusLabel->setStyleSheet("color: white;");
+    updateStatusStyle(statusLabel, "normal");
     statusLabel->setText(LanguageManager::tr("auth.status.connecting"));
 
     serverApi->login(username.toStdString(), password.toStdString(),
@@ -174,7 +184,7 @@ void LoginWindow::handleLogin() {
 
                     accept();
                 } else {
-                    statusLabel->setStyleSheet("color: red;");
+                    updateStatusStyle(statusLabel, "error");
                     QString errorMsg = msg.empty() ? LanguageManager::tr("auth.error.login_failed") : QString::fromStdString(msg);
                     statusLabel->setText(errorMsg);
                 }
@@ -195,20 +205,20 @@ void LoginWindow::handleRegistration() {
     QString password = regPasswordInput->text();
 
     if (username.isEmpty() || email.isEmpty() || password.isEmpty()) {
-        statusLabel->setStyleSheet("color: red;");
+        updateStatusStyle(statusLabel, "error");
         statusLabel->setText(LanguageManager::tr("auth.error.missing_fields"));
         return;
     }
 
     std::regex emailRegex(R"(.+@.+\..+)");
     if (!std::regex_match(email.toStdString(), emailRegex)) {
-        statusLabel->setStyleSheet("color: red;");
+        updateStatusStyle(statusLabel, "error");
         statusLabel->setText(LanguageManager::tr("auth.error.bad_email"));
         return;
     }
 
     regBtn->setEnabled(false);
-    statusLabel->setStyleSheet("color: white;");
+    updateStatusStyle(statusLabel, "normal");
     statusLabel->setText(LanguageManager::tr("auth.status.registering"));
 
     serverApi->createUser(username.toStdString(), email.toStdString(), password.toStdString(),
@@ -217,14 +227,14 @@ void LoginWindow::handleRegistration() {
             QMetaObject::invokeMethod(this, [this, success]() {
                 regBtn->setEnabled(true);
                 if (success) {
-                    statusLabel->setStyleSheet("color: green;");
+                    updateStatusStyle(statusLabel, "success");
                     statusLabel->setText(LanguageManager::tr("auth.status.reg_success"));
 
                     regPasswordInput->clear();
                     loginUsernameInput->setText(regUsernameInput->text());
                     tabWidget->setCurrentIndex(0);
                 } else {
-                    statusLabel->setStyleSheet("color: red;");
+                    updateStatusStyle(statusLabel, "error");
                     statusLabel->setText(LanguageManager::tr("auth.error.reg_failed"));
                 }
             });

@@ -9,6 +9,8 @@ GroupChatPage::GroupChatPage(QWidget* parent) : AbstractChatPage(parent) {
     connect(ClientNotifier::instance(), &ClientNotifier::groupsChanged, this, [this]() {
         if (currentGroupId != -1) loadChat(currentGroupId);
     });
+    attachmentContainer->hide();
+    btnAddAttachment->hide();
 }
 void GroupChatPage::loadChat(int groupId) {
     currentGroupId = groupId;

@@ -4,6 +4,85 @@
  *
  * SPDX-License-Identifier: MIT
  */
+
+QPushButton#closeBtn {
+    background: transparent;
+    border: none;
+    font-weight: bold;
+    color: #a0a0a0;
+    padding: 0px;
+    margin: 0px;
+    font-size: 14px;
+}
+
+QPushButton#closeBtn:hover {
+    color: #60cdff;
+}
+
+QLabel#loadingLabel {
+    color: #ffffff;
+}
+
+QPushButton#cancelBtn {
+    background: transparent;
+    border: 1px solid #60cdff;
+    color: #60cdff;
+    border-radius: 4px;
+    padding: 2px 10px;
+    margin-left: 10px;
+}
+
+QMenu#aiTutorMenu {
+    border-radius: 6px;
+    background-color: #252525;
+    border: 1px solid rgba(255,255,255,10);
+    padding: 4px;
+    color: white;
+}
+
+QMenu#aiTutorMenu::item {
+    padding: 6px 24px 6px 12px;
+    border-radius: 4px;
+    margin: 2px 0px;
+}
+
+QMenu#aiTutorMenu::item:selected {
+    background-color: rgba(255,255,255,15);
+}
+
+QScrollArea#chatScrollArea {
+    background: transparent;
+}
+
+QLabel[errorState="true"] {
+    color: #60cdff;
+}
+
+QFrame#serverCard {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+}
+
+QTabBar::tab {
+    color: white;
+}
+
+QCheckBox#rememberCheck {
+    color: white;
+}
+
+QLabel#loginStatusLabel[statusState="normal"] {
+    color: white;
+}
+
+QLabel#loginStatusLabel[statusState="error"] {
+    color: #60cdff;
+}
+
+QLabel#loginStatusLabel[statusState="success"] {
+    color: #4CAF50;
+}
+
 QFrame[cssClass="card"] {
     background-color: rgba(255, 255, 255, 12);
     border: 1px solid rgba(255, 255, 255, 8);

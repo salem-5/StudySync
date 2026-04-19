@@ -39,6 +39,12 @@ void MainWindow::refreshAll() {
     for (auto* membersDialog : this->findChildren<ManageMembersDialog*>()) {
         membersDialog->refreshList();
     }
+    int credits = ClientState::getAiCredits();
+    if (credits == -1) {
+        lblAiCredits->setText("AI Disabled");
+    } else {
+        lblAiCredits->setText(QString("AI Credits: %1").arg(credits));
+    }
 }
 
 void MainWindow::setupUi() {
@@ -167,7 +173,9 @@ void MainWindow::setupTopbar() {
     titleFont.setBold(true);
     titleFont.setPointSize(12);
     topbarTitle->setFont(titleFont);
-
+    lblAiCredits = new QLabel(this);
+    lblAiCredits->setStyleSheet("color: gray; font-weight: bold; margin-left: 10px;");
+    layout->addWidget(lblAiCredits);
     layout->addWidget(topbarTitle);
     layout->addStretch();
     createTaskBtn = new QPushButton(LanguageManager::tr("task.create"), this);
@@ -213,6 +221,12 @@ void MainWindow::connectSignals() {
     connect(pageGroups, &GroupsPage::groupsChanged, this, [this]() {
         emit groupsChanged();
         emit tasksChanged();
+    });
+    connect(btnAiTutor, &QPushButton::clicked, this, [this]() {
+        if (ClientState::getAiCredits() == -1) {
+            QMessageBox::warning(this, "AI Tutor", "AI is disabled on this server.");
+            btnAiTutor->setChecked(false);
+        }
     });
 }
 

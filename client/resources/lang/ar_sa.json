@@ -108,5 +108,11 @@
   "auth.server_public": "استخدام خادم عام",
   "auth.server_custom": "استخدام خادم مخصص",
   "auth.status.using_public": "استخدام خادم عام",
-  "auth.status.custom_server": "استخدام خادم مخصص"
+  "auth.status.custom_server": "استخدام خادم مخصص",
+  "chat.generating": "جارٍ التوليد...",
+  "chat.stop": "إيقاف",
+  "chat.add_task": "+ إضافة مهمة",
+  "chat.waiting": "بانتظار الاستجابة...",
+  "chat.generation_canceled": "تم إلغاء التوليد بواسطة المستخدم.",
+  "ai.no_tasks": "لا توجد مهام متاحة"
 }

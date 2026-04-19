@@ -67,6 +67,22 @@ TaskCard::TaskCard(const Task& task, const QString& groupName, QWidget* parent, 
     layout->addLayout(textLayout);
     layout->addStretch();
     if (hasEditButton) {
+        QPushButton* btnAskAi = new QPushButton("Ask AI");
+        btnAskAi->setToolTip(LanguageManager::tr("task.ask_ai"));
+        btnAskAi->setCursor(Qt::PointingHandCursor);
+        btnAskAi->setProperty("cssClass", "card");
+        int credits = ClientState::getAiCredits();
+        if (credits == -1) {
+            btnAskAi->setEnabled(false);
+            btnAskAi->setToolTip("AI Server is offline");
+        } else {
+            btnAskAi->setToolTip(LanguageManager::tr("task.ask_ai"));
+            btnAskAi->setCursor(Qt::PointingHandCursor);
+        }
+        connect(btnAskAi, &QPushButton::clicked, this, [this, id = task.getId()]() {
+            emit askAiRequested(id);
+        });
+        layout->addWidget(btnAskAi);
         QPushButton* btnEdit = new QPushButton(LanguageManager::tr("task.edit"));
         btnEdit->setCursor(Qt::PointingHandCursor);
         connect(btnEdit, &QPushButton::clicked, this, [this, id = task.getId()]() {

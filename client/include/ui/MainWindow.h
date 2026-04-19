@@ -30,6 +30,7 @@ private:
 
     QWidget* topbar;
     QLabel* topbarTitle;
+    QLabel* lblAiCredits;
 
     QStackedWidget* stackedWidget;
     DashboardPage* pageDashboard;
