@@ -33,7 +33,9 @@ public:
     void toggleTaskCompletion(int taskId, bool completed, std::function<void(bool)> callback);
 
     void sendMessage(int groupId, const std::string& text, std::function<void(bool)> callback);
-
+    void askAi(const std::string& text, const std::vector<int>& taskIds, std::function<void(bool, const std::string&)> callback = nullptr);
+    void clearAiHistory(int userId, std::function<void(bool)> callback = nullptr);
+    void cancelAi(int userId, std::function<void(bool)> callback = nullptr);
 private:
     std::shared_ptr<ClientNetworkManager> network;
 };

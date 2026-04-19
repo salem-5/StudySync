@@ -1,33 +1,57 @@
 #include "ui/page/AiTutorPage.h"
 #include <QVBoxLayout>
 #include <QMenu>
+#include <QMessageBox>
+
 #include "LanguageManager.h"
 #include "ui/ClientState.h"
 
+static bool isWaitingForAi = false;
 AiTutorPage::AiTutorPage(QWidget* parent) : AbstractChatPage(parent) {
     refreshMessages();
     connect(ClientNotifier::instance(), &ClientNotifier::aiResponseReceived, this, [this](bool success, QString message) {
+        isWaitingForAi = false;
         if (success) {
             finishLoadingMessage(message, false);
         } else {
             finishLoadingMessage(message, true);
         }
     });
+
+    btnClearHistory->setObjectName("btnClearHistory");
+    btnClearHistory->show();
+    btnAddAttachment->setObjectName("btnAddAttachment");
+
+    connect(btnClearHistory, &QPushButton::clicked, this, [this]() {
+        if (QMessageBox::question(this,
+                LanguageManager::tr("chat.clear.title"),
+                LanguageManager::tr("chat.clear.prompt"),
+                QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
+            ClientState::clearAiHistory();
+        }
+    });
     connect(ClientNotifier::instance(), &ClientNotifier::userChanged, this, [this]() { refreshMessages(); });
 }
 
 void AiTutorPage::refreshMessages() {
+    refreshChatScrollPosition();
+
     clearChat();
     addMessage(LanguageManager::tr("nav.ai_tutor"), LanguageManager::tr("ai.greeting"), true);
 
     if (ClientState::getAiCredits() == 0) {
         setInputEnabled(false);
-        addMessage(LanguageManager::tr("nav.ai_tutor"), "You are out of AI credits.", true);
+        addMessage(LanguageManager::tr("nav.ai_tutor"), LanguageManager::tr("ai.out_of_credits_msg"), true);
     } else {
         setInputEnabled(true);
     }
 
-    for (const auto& msg : ClientState::getAiMessages()) {
+    const auto& msgs = ClientState::getAiMessages();
+    if (!msgs.empty() && msgs.back().getRole() == "ai") {
+        isWaitingForAi = false;
+    }
+
+    for (const auto& msg : msgs) {
         QMap<int, QString> attachmentsMap;
         for (int id : msg.getAttachments()) {
             const Task* t = ClientState::getTaskById(id);
@@ -41,6 +65,8 @@ void AiTutorPage::refreshMessages() {
             addMessage(LanguageManager::tr("nav.ai_tutor"), QString::fromStdString(msg.getText()), true, attachmentsMap);
         }
     }
+
+    restoreChatScrollPosition();
 }
 
 void AiTutorPage::attachTask(int taskId) {
@@ -75,15 +101,11 @@ void AiTutorPage::onAddAttachmentClicked() {
     menu.exec(pos);
 }
 
-
-
 void AiTutorPage::onSendMessageRequested(const QString& text) {
     if (ClientState::getAiCredits() == 0) {
-        finishLoadingMessage("Out of AI credits", true);
+        finishLoadingMessage(LanguageManager::tr("ai.out_of_credits"), true);
         return;
     }
-
-    addMessage(LanguageManager::tr("user.me"), text, false, attachedTasks);
 
     std::vector<int> taskIds;
     for (auto it = attachedTasks.begin(); it != attachedTasks.end(); ++it) {
@@ -91,11 +113,14 @@ void AiTutorPage::onSendMessageRequested(const QString& text) {
     }
 
     clearAttachments();
-    addLoadingMessage(LanguageManager::tr("nav.ai_tutor"));
 
+    isWaitingForAi = true;
+    setInputEnabled(false);
     ClientState::askAi(text.toStdString(), taskIds);
+    addLoadingMessage(LanguageManager::tr("nav.ai_tutor"));
 }
 
 void AiTutorPage::onCancelGeneration() {
+    setInputEnabled(true);
     ClientState::cancelAi();
 }

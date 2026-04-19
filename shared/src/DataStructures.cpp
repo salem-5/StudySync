@@ -237,8 +237,14 @@ StudyGroup StudyGroup::fromJson(const boost::json::object& obj) {
     return group;
 }
 
-LoginPayload::LoginPayload(const User& user, const std::vector<StudyGroup>& studyGroups, const std::vector<StudyGroup>& pendingInvites, const std::vector<Task>& tasks, const std::string& sessionToken)
-    : user(user), studyGroups(studyGroups), pendingInvites(pendingInvites), tasks(tasks), sessionToken(sessionToken) {}
+LoginPayload::LoginPayload(const User &user, const std::vector<StudyGroup> &studyGroups,
+                           const std::vector<StudyGroup> &pendingInvites, const std::vector<Task> &tasks,
+                           const std::string &sessionToken, int aiCredits, const std::vector<AiMessage>& aiMessages)
+    : user(user), studyGroups(studyGroups), pendingInvites(pendingInvites), tasks(tasks),
+      sessionToken(sessionToken), aiCredits(aiCredits), aiMessages(aiMessages) {}
+
+int LoginPayload::getAiCredits() const { return aiCredits; }
+std::vector<AiMessage> LoginPayload::getAiMessages() const { return aiMessages; }
 
 std::vector<StudyGroup> LoginPayload::getPendingInvites() const { return pendingInvites; }
 
@@ -263,12 +269,26 @@ boost::json::object LoginPayload::toJson() const {
         tasksArray.push_back(task.toJson());
     }
 
+    boost::json::array aiMsgsArray;
+    for (const auto& msg : aiMessages) {
+        boost::json::array attArr;
+        for (int id : msg.getAttachments()) attArr.push_back(id);
+
+        aiMsgsArray.push_back({
+            {"role", msg.getRole()},
+            {"text", msg.getText()},
+            {"attachments", attArr}
+        });
+    }
+
     return {
-        { "user", user.toSafeJson() },
-        { "studyGroups", groupsArray },
-        { "pendingInvites", invitesArray },
-        { "tasks", tasksArray },
-        { "sessionToken", sessionToken }
+            { "user", user.toSafeJson() },
+            { "studyGroups", groupsArray },
+            { "pendingInvites", invitesArray },
+            { "tasks", tasksArray },
+            { "sessionToken", sessionToken },
+            { "aiCredits", aiCredits },
+            { "aiMessages", aiMsgsArray }
     };
 }
 
@@ -276,23 +296,56 @@ LoginPayload LoginPayload::fromJson(const boost::json::object& obj) {
     User user = User::fromJson(obj.at("user").as_object());
 
     std::vector<StudyGroup> groups;
-    for (const auto& item : obj.at("studyGroups").as_array()) {
-        groups.push_back(StudyGroup::fromJson(item.as_object()));
+    if (obj.contains("studyGroups") && obj.at("studyGroups").is_array()) {
+        for (const auto& item : obj.at("studyGroups").as_array()) {
+            groups.push_back(StudyGroup::fromJson(item.as_object()));
+        }
     }
 
     std::vector<StudyGroup> invites;
-    if (obj.contains("pendingInvites")) {
+    if (obj.contains("pendingInvites") && obj.at("pendingInvites").is_array()) {
         for (const auto& item : obj.at("pendingInvites").as_array()) {
             invites.push_back(StudyGroup::fromJson(item.as_object()));
         }
     }
 
     std::vector<Task> tasks;
-    for (const auto& item : obj.at("tasks").as_array()) {
-        tasks.push_back(Task::fromJson(item.as_object()));
+    if (obj.contains("tasks") && obj.at("tasks").is_array()) {
+        for (const auto& item : obj.at("tasks").as_array()) {
+            tasks.push_back(Task::fromJson(item.as_object()));
+        }
     }
 
-    std::string sessionToken = obj.contains("sessionToken") ? obj.at("sessionToken").as_string().c_str() : "";
+    std::string sessionToken = "";
+    if (obj.contains("sessionToken") && obj.at("sessionToken").is_string()) {
+        sessionToken = obj.at("sessionToken").as_string().c_str();
+    }
 
-    return LoginPayload(user, groups, invites, tasks, sessionToken);
+    int parsedAiCredits = -1;
+    if (obj.contains("aiCredits")) {
+        if (obj.at("aiCredits").is_int64()) parsedAiCredits = obj.at("aiCredits").as_int64();
+        else if (obj.at("aiCredits").is_uint64()) parsedAiCredits = obj.at("aiCredits").as_uint64();
+    }
+
+    std::vector<AiMessage> parsedAiMessages;
+    if (obj.contains("aiMessages") && obj.at("aiMessages").is_array()) {
+        for (const auto& item : obj.at("aiMessages").as_array()) {
+            if (!item.is_object()) continue;
+            auto msgObj = item.as_object();
+
+            std::string role = msgObj.contains("role") ? msgObj.at("role").as_string().c_str() : "";
+            std::string text = msgObj.contains("text") ? msgObj.at("text").as_string().c_str() : "";
+
+            std::vector<int> attachments;
+            if (msgObj.contains("attachments") && msgObj.at("attachments").is_array()) {
+                for (const auto& att : msgObj.at("attachments").as_array()) {
+                    if (att.is_int64()) attachments.push_back(att.as_int64());
+                    else if (att.is_uint64()) attachments.push_back(att.as_uint64());
+                }
+            }
+            parsedAiMessages.emplace_back(role, text, attachments);
+        }
+    }
+
+    return LoginPayload(user, groups, invites, tasks, sessionToken, parsedAiCredits, parsedAiMessages);
 }

@@ -11,12 +11,13 @@ void startAutoRefreshTimer(boost::asio::io_context& io_context);
 int main(int argc, char* argv[]) {
     Config config = parseCommandLine(argc, argv);
     uint16_t port = config.port;
+    uint16_t aiPort = config.aiListenerPort;
     std::cout << "Server Starting on port " << port << "..." << std::endl;
 
     try {
         Database::getInstance();
         std::cout << "Database initialized" << std::endl;
-        registerServerRoutes();
+        registerServerRoutes(aiPort);
 
         boost::asio::io_context io_context;
         TcpServer server(io_context, port);

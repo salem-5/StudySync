@@ -1,8 +1,10 @@
 #include "Database.h"
 #include <iostream>
 #include <sqlite3.h>
+#include <sstream>
 
 #include "DataStructures.h"
+static std::unordered_map<int, bool> s_userAiCancellationFlags;
 
 Database& Database::getInstance() {
     static Database instance;
@@ -50,7 +52,8 @@ void Database::initTables() {
             username TEXT UNIQUE NOT NULL,
             email TEXT,
             password TEXT,
-            has_ai_access INTEGER DEFAULT 0
+            has_ai_access INTEGER DEFAULT 1,
+            ai_credits INTEGER DEFAULT 50
         );
 
         CREATE TABLE IF NOT EXISTS StudyGroups (
@@ -102,10 +105,19 @@ void Database::initTables() {
             FOREIGN KEY(group_id) REFERENCES StudyGroups(id) ON DELETE CASCADE,
             FOREIGN KEY(user_id) REFERENCES Users(id) ON DELETE CASCADE
         );
+
+        CREATE TABLE IF NOT EXISTS AiMessages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            role TEXT,
+            text TEXT,
+            attachments TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(user_id) REFERENCES Users(id) ON DELETE CASCADE
+        );
     )";
     executeQuery(tables);
 }
-
 void Database::initTriggers() {
     std::vector<std::string> tables = { "Users", "StudyGroups", "GroupMembers", "GroupInvites", "PinnedGroups", "Tasks", "Messages" };
 
@@ -427,6 +439,8 @@ std::vector<int> Database::getUsersInGroup(int groupId) {
 }
 
 LoginPayload Database::getFullUserData(int userId, const std::string& sessionToken) {
+    int userAiCredits = getAiCredits(userId);
+    std::vector<AiMessage> userAiMessages = getAiMessages(userId);
     std::lock_guard<std::mutex> lock(dbMutex);
     sqlite3_stmt* stmt;
 
@@ -518,5 +532,112 @@ LoginPayload Database::getFullUserData(int userId, const std::string& sessionTok
     }
     sqlite3_finalize(stmt);
 
-    return LoginPayload(user, studyGroups, pendingInvites, allTasks, sessionToken);
+    return LoginPayload(user, studyGroups, pendingInvites, allTasks, sessionToken, userAiCredits, userAiMessages);
+}
+
+void Database::addAiMessage(int userId, const std::string& role, const std::string& text, const std::vector<int>& attachments) {
+    {
+        std::lock_guard<std::mutex> lock(dbMutex);
+        if (role == "ai" || role == "assistant") {
+            if (s_userAiCancellationFlags[userId] && text != "Response cancelled by user") {
+                // Ignore the delayed AI response, reset flag, and exit early
+                s_userAiCancellationFlags[userId] = false;
+                return;
+            }
+        }
+        if (role == "user") {
+            s_userAiCancellationFlags[userId] = false;
+        }
+    }
+    std::lock_guard<std::mutex> lock(dbMutex);
+    std::string attStr = "";
+    for (size_t i = 0; i < attachments.size(); ++i) {
+        attStr += std::to_string(attachments[i]);
+        if (i < attachments.size() - 1) attStr += ",";
+    }
+
+    sqlite3_stmt* stmt;
+    if (sqlite3_prepare_v2(db, "INSERT INTO AiMessages (user_id, role, text, attachments) VALUES (?, ?, ?, ?);", -1, &stmt, nullptr) == SQLITE_OK) {
+        sqlite3_bind_int(stmt, 1, userId);
+        sqlite3_bind_text(stmt, 2, role.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 3, text.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 4, attStr.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_step(stmt);
+    }
+    sqlite3_finalize(stmt);
+}
+
+int Database::getAiCredits(int userId) {
+    std::lock_guard<std::mutex> lock(dbMutex);
+    int credits = 0;
+    sqlite3_stmt* stmt;
+    if (sqlite3_prepare_v2(db, "SELECT ai_credits FROM Users WHERE id = ?;", -1, &stmt, nullptr) == SQLITE_OK) {
+        sqlite3_bind_int(stmt, 1, userId);
+        if (sqlite3_step(stmt) == SQLITE_ROW) {
+            credits = sqlite3_column_int(stmt, 0);
+        }
+    }
+    sqlite3_finalize(stmt);
+    return credits;
+}
+
+void Database::decrementAiCredits(int userId) {
+    std::lock_guard<std::mutex> lock(dbMutex);
+    sqlite3_stmt* stmt;
+    if (sqlite3_prepare_v2(db, "UPDATE Users SET ai_credits = MAX(0, ai_credits - 1) WHERE id = ?;", -1, &stmt, nullptr) == SQLITE_OK) {
+        sqlite3_bind_int(stmt, 1, userId);
+        sqlite3_step(stmt);
+    }
+    sqlite3_finalize(stmt);
+}
+std::vector<AiMessage> Database::getAiMessages(int userId) {
+    std::lock_guard<std::mutex> lock(dbMutex);
+    std::vector<AiMessage> messages;
+    sqlite3_stmt* stmt;
+
+    if (sqlite3_prepare_v2(db, "SELECT role, text, attachments FROM AiMessages WHERE user_id = ? ORDER BY id ASC;", -1, &stmt, nullptr) == SQLITE_OK) {
+        sqlite3_bind_int(stmt, 1, userId);
+        while (sqlite3_step(stmt) == SQLITE_ROW) {
+            std::string role = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+            std::string text = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+            std::string attStr = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+
+            std::vector<int> attachments;
+            if (!attStr.empty()) {
+                std::stringstream ss(attStr);
+                std::string item;
+                while (std::getline(ss, item, ',')) {
+                    attachments.push_back(std::stoi(item));
+                }
+            }
+            messages.emplace_back(role, text, attachments);
+        }
+    }
+    sqlite3_finalize(stmt);
+    return messages;
+}
+void Database::setAiCancellationFlag(int userId, bool flag) {
+    std::lock_guard<std::mutex> lock(dbMutex);
+    s_userAiCancellationFlags[userId] = flag;
+}
+
+void Database::clearAiMessages(int userId) {
+    std::lock_guard<std::mutex> lock(dbMutex);
+    sqlite3_stmt* stmt;
+    if (sqlite3_prepare_v2(db, "DELETE FROM AiMessages WHERE user_id = ?;", -1, &stmt, nullptr) == SQLITE_OK) {
+        sqlite3_bind_int(stmt, 1, userId);
+        sqlite3_step(stmt);
+    }
+    sqlite3_finalize(stmt);
+}
+
+void Database::replaceLastAiMessage(int userId, const std::string& newText) {
+    std::lock_guard<std::mutex> lock(dbMutex);
+    sqlite3_stmt* stmt;
+    if (sqlite3_prepare_v2(db, "UPDATE AiMessages SET text = ? WHERE id = (SELECT id FROM AiMessages WHERE user_id = ? ORDER BY id DESC LIMIT 1);", -1, &stmt, nullptr) == SQLITE_OK) {
+        sqlite3_bind_text(stmt, 1, newText.c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_int(stmt, 2, userId);
+        sqlite3_step(stmt);
+    }
+    sqlite3_finalize(stmt);
 }

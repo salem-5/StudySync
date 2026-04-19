@@ -13,6 +13,11 @@ GroupChatPage::GroupChatPage(QWidget* parent) : AbstractChatPage(parent) {
     btnAddAttachment->hide();
 }
 void GroupChatPage::loadChat(int groupId) {
+    bool isNewGroup = (currentGroupId != groupId);
+    if (!isNewGroup) {
+        refreshChatScrollPosition();
+    }
+
     currentGroupId = groupId;
     this->clearChat();
 
@@ -29,8 +34,15 @@ void GroupChatPage::loadChat(int groupId) {
 
         addMessage(name, text, !isMe);
     }
+    if (!isNewGroup) {
+        restoreChatScrollPosition();
+    } else {
+        QTimer::singleShot(0, this, [this]() {
+            scrollArea->widget()->adjustSize();
+            scrollToBottom();
+        });
+    }
 }
-
 void GroupChatPage::onSendMessageRequested(const QString& text) {
     ClientState::sendMessage(currentGroupId, text.toStdString());
     loadChat(currentGroupId);

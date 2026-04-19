@@ -8,6 +8,9 @@
 #include <chrono>
 #include <memory>
 #include <regex>
+#include "TcpClient.h"
+
+static std::unique_ptr<TcpClient> aiPythonClient = nullptr;
 
 void pushUpdateToUser(int userId) {
     auto conn = ConnectionManager::getInstance().getConnection(userId);
@@ -52,8 +55,138 @@ void startAutoRefreshTimer(boost::asio::io_context& io_context) {
     });
 }
 
-void registerServerRoutes() {
+void registerServerRoutes(int port) {
     auto& router = MessageRouter::getInstance();
+
+    aiPythonClient = std::make_unique<TcpClient>("127.0.0.1", std::to_string(port),
+        [](const std::string& msg) {
+            try {
+                auto parsed = boost::json::parse(msg).as_object();
+                int userId = parsed.at("user_id").as_int64();
+                std::string status = parsed.at("status").as_string().c_str();
+                std::string aiMessage = parsed.at("message").as_string().c_str();
+
+                if (status == "success") {
+                    Database::getInstance().addAiMessage(userId, "ai", aiMessage, {});
+                }
+                auto conn = ConnectionManager::getInstance().getConnection(userId);
+                if (conn) {
+                    boost::json::object response;
+                    response["cmd"] = "ai_response";
+                    response["success"] = (status == "success");
+                    response["message"] = aiMessage;
+                    conn->send(boost::json::serialize(response));
+                }
+                pushUpdateToUser(userId);
+            } catch (const std::exception& e) {
+                std::cerr << "Error parsing AI response: " << e.what() << "\n";
+            }
+        },
+        [port]() { std::cout << "Connected to AI Python Backend on " << port << "\n"; }
+    );
+
+    router.registerRoute("askAi", [](const boost::json::object& req, boost::json::object& res) {
+        int userId = req.at("userId").as_int64();
+        std::string text = req.at("text").as_string().c_str();
+
+        std::vector<int> taskIds;
+        if (req.contains("taskIds")) {
+            for (const auto& item : req.at("taskIds").as_array()) {
+                taskIds.push_back(item.as_int64());
+            }
+        }
+
+        if (Database::getInstance().getAiCredits(userId) <= 0) {
+            res["status"] = "error";
+            res["message"] = "No AI credits remaining.";
+            return;
+        }
+
+        Database::getInstance().decrementAiCredits(userId);
+        Database::getInstance().addAiMessage(userId, "user", text, taskIds);
+        pushUpdateToUser(userId);
+
+        if (aiPythonClient && aiPythonClient->isConnected()) {
+            boost::json::object pyReq;
+            pyReq["user_id"] = userId;
+            pyReq["req_id"] = req.contains("req_id") ? req.at("req_id").as_int64() : 0;
+            pyReq["current_message"] = text;
+
+            std::string dummyToken = "";
+            LoginPayload payload = Database::getInstance().getFullUserData(userId, dummyToken);
+
+            boost::json::array historyArr;
+            const auto& allMessages = payload.getAiMessages();
+            for (size_t i = 0; i < allMessages.size(); ++i) {
+                if (allMessages[i].getRole() == "user") {
+                    if (i + 1 < allMessages.size() && allMessages[i+1].getText() == "Response cancelled by user") {
+                        continue;
+                    }
+                    boost::json::object mObj;
+                    mObj["role"] = allMessages[i].getRole();
+                    mObj["content"] = allMessages[i].getText();
+                    historyArr.push_back(mObj);
+                }
+                else if (allMessages[i].getRole() == "ai" || allMessages[i].getRole() == "assistant") {
+                    if (allMessages[i].getText() == "Response cancelled by user") {
+                        continue;
+                    }
+                    boost::json::object mObj;
+                    mObj["role"] = allMessages[i].getRole();
+                    mObj["content"] = allMessages[i].getText();
+                    historyArr.push_back(mObj);
+                }
+            }
+            pyReq["message_history"] = historyArr;
+
+            boost::json::array tasksArr;
+            for (int id : taskIds) {
+                for (const auto& t : payload.getTasks()) {
+                    if (t.getId() == id) {
+                        boost::json::object taskObj;
+                        taskObj["id"] = t.getId();
+                        taskObj["title"] = t.getTitle();
+                        taskObj["tag"] = t.getTag();
+                        taskObj["groupId"] = t.getGroupId();
+                        tasksArr.push_back(taskObj);
+                        break;
+                    }
+                }
+            }
+            pyReq["attached_tasks"] = tasksArr;
+
+            aiPythonClient->send(boost::json::serialize(pyReq));
+
+            res["status"] = "success";
+        } else {
+            res["status"] = "error";
+            res["message"] = "AI Backend is offline.";
+        }
+    });
+
+    router.registerRoute("clearAiHistory", [](const boost::json::object& req, boost::json::object& res) {
+            int userId = req.at("userId").as_int64();
+            Database::getInstance().clearAiMessages(userId);
+            res["status"] = "success";
+            pushUpdateToUser(userId);
+        });
+
+    router.registerRoute("cancelAi", [](const boost::json::object& req, boost::json::object& res) {
+        int userId = req.at("userId").as_int64();
+        auto msgs = Database::getInstance().getAiMessages(userId);
+
+        if (!msgs.empty()) {
+            if (msgs.back().getRole() == "ai" && msgs.back().getText() != "Response cancelled by user") {
+                Database::getInstance().replaceLastAiMessage(userId, "Response cancelled by user");
+            } else if (msgs.back().getRole() == "user") {
+                Database::getInstance().addAiMessage(userId, "ai", "Response cancelled by user", {});
+            }
+        }
+        Database::getInstance().setAiCancellationFlag(userId, true);
+
+        res["status"] = "success";
+        pushUpdateToUser(userId);
+    });
 
     router.registerRoute("ping", [](const boost::json::object& req, boost::json::object& res) {
         res["status"] = "success";

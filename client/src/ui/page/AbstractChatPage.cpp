@@ -6,10 +6,14 @@
 #include <QFrame>
 #include <QEvent>
 #include <QStyle>
+#include <QTextEdit>
 #include "LanguageManager.h"
+#include "ui/SyntaxHighlighter.h"
+#include <QAbstractTextDocumentLayout>
 
-AbstractChatPage::AbstractChatPage(QWidget* parent) : QWidget(parent),
-    currentLoadingLabel(nullptr), currentCancelBtn(nullptr), currentLoadingBubble(nullptr), spinnerFrame(0) {
+class QTextEdit;
+
+AbstractChatPage::AbstractChatPage(QWidget* parent) : QWidget(parent),currentLoadingLabel(nullptr), currentCancelBtn(nullptr), currentLoadingBubble(nullptr), spinnerFrame(0) {
     spinnerTimer = new QTimer(this);
     connect(spinnerTimer, &QTimer::timeout, this, [this]() {
         if (currentLoadingLabel) {
@@ -25,6 +29,15 @@ void AbstractChatPage::setupUi() {
     mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(10, 10, 10, 10);
 
+    QHBoxLayout* topBarLayout = new QHBoxLayout();
+    topBarLayout->addStretch();
+
+    btnClearHistory = new QPushButton(LanguageManager::tr("chat.clear_history"));
+    btnClearHistory->setObjectName("btnClearHistory");
+    btnClearHistory->hide();
+    topBarLayout->addWidget(btnClearHistory);
+
+    mainLayout->addLayout(topBarLayout);
     scrollArea = new QScrollArea(this);
     scrollArea->setWidgetResizable(true);
     scrollArea->setFrameShape(QFrame::NoFrame);
@@ -152,7 +165,7 @@ void AbstractChatPage::addMessage(const QString& senderName, const QString& text
 
     QVBoxLayout* innerLayout = new QVBoxLayout(innerBubble);
     innerLayout->setContentsMargins(12, 8, 12, 8);
-    innerLayout->setSpacing(4);
+    innerLayout->setSpacing(6);
 
     if (!consecutive) {
         QLabel* nameLabel = new QLabel(senderName, innerBubble);
@@ -190,10 +203,62 @@ void AbstractChatPage::addMessage(const QString& senderName, const QString& text
     }
 
     if (!text.isEmpty()) {
-        QLabel* messageLabel = new QLabel(text, innerBubble);
-        messageLabel->setWordWrap(true);
-        messageLabel->setMaximumWidth(400);
-        innerLayout->addWidget(messageLabel);
+        QList<SyntaxHighlighter::MessageBlock> blocks = SyntaxHighlighter::splitMessage(text);
+
+        for (const auto& block : blocks) {
+            if (!block.isCode) {
+                if (block.text.trimmed().isEmpty()) continue;
+
+                QLabel* messageLabel = new QLabel(innerBubble);
+                messageLabel->setWordWrap(true);
+                messageLabel->setMaximumWidth(400);
+                messageLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
+                messageLabel->setOpenExternalLinks(true);
+                messageLabel->setTextFormat(Qt::RichText);
+
+                QString textStr = block.text;
+                textStr.replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>");
+                QRegularExpression inlineRe("`([^`]+)`");
+                textStr.replace(inlineRe, "<span style=\"background-color: #2D2D30; font-family: monospace; padding: 2px 4px; border-radius: 4px;\">&nbsp;\\1&nbsp;</span>");
+
+                messageLabel->setText(textStr);
+                innerLayout->addWidget(messageLabel);
+            } else {
+                QFrame* codeFrame = new QFrame(innerBubble);
+                codeFrame->setObjectName("codeFrame");
+                codeFrame->setStyleSheet("#codeFrame { background-color: #1E1E1E; border-radius: 8px; }");
+
+                QVBoxLayout* codeLayout = new QVBoxLayout(codeFrame);
+                codeLayout->setContentsMargins(14, 14, 14, 14);
+                codeLayout->setSpacing(0);
+
+                QTextEdit* textEdit = new QTextEdit(codeFrame);
+                textEdit->setReadOnly(true);
+                textEdit->setFrameStyle(QFrame::NoFrame);
+                textEdit->viewport()->setAutoFillBackground(false);
+                textEdit->setStyleSheet("QTextEdit { background: transparent; border: none; }");
+
+                textEdit->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+                textEdit->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+                textEdit->setLineWrapMode(QTextEdit::WidgetWidth);
+                textEdit->document()->setDocumentMargin(0);
+
+                SyntaxHighlighter::applyHighlighting(textEdit->document(), block.language, block.text);
+                int fixedWidth = 360;
+                textEdit->setFixedWidth(fixedWidth);
+
+                textEdit->document()->setTextWidth(fixedWidth);
+                int docHeight = qRound(textEdit->document()->size().height());
+                QFontMetrics metrics(textEdit->font());
+                int halfLineHeight = metrics.lineSpacing() / 2;
+
+                textEdit->setFixedHeight(docHeight + halfLineHeight);
+                codeFrame->setFixedHeight(docHeight + halfLineHeight + 28);
+
+                codeLayout->addWidget(textEdit);
+                innerLayout->addWidget(codeFrame);
+            }
+        }
     }
 
     if (isReceived) {
@@ -204,14 +269,10 @@ void AbstractChatPage::addMessage(const QString& senderName, const QString& text
         bubbleLayout->addWidget(innerBubble);
     }
     chatLayout->addWidget(bubbleWidget);
-    QTimer::singleShot(0, this, [this]() {
-        scrollArea->widget()->adjustSize();
-        QScrollBar* bar = scrollArea->verticalScrollBar();
-        bar->setValue(bar->maximum());
-    });
 }
 
 void AbstractChatPage::addLoadingMessage(const QString& senderName) {
+    if (currentLoadingBubble) return;
     bool consecutive = (lastSenderValid && lastSenderWasReceived == true);
     lastSenderValid = true;
     lastSenderWasReceived = true;
@@ -289,6 +350,10 @@ void AbstractChatPage::finishLoadingMessage(const QString& text, bool isError) {
     currentLoadingLabel = nullptr;
     currentLoadingBubble = nullptr;
     chatInput->setFocus();
+    QTimer::singleShot(0, this, [this]() {
+        scrollArea->widget()->adjustSize();
+        scrollToBottom();
+    });
 }
 
 void AbstractChatPage::cancelLoading() {
@@ -312,6 +377,48 @@ void AbstractChatPage::clearChat() {
             widget->deleteLater();
         }
         delete item;
+
+        currentLoadingLabel = nullptr;
+        currentLoadingBubble = nullptr;
+        if (currentCancelBtn) {
+            currentCancelBtn = nullptr;
+        }
+        spinnerTimer->stop();
     }
-    lastSenderValid = false;
+}
+
+void AbstractChatPage::refreshChatScrollPosition() {
+    if (scrollArea && scrollArea->verticalScrollBar()) {
+        QScrollBar* bar = scrollArea->verticalScrollBar();
+        previousScrollPosition = bar->value();
+
+        scrollArea->setProperty("prevScrollMax", bar->maximum());
+        scrollArea->setProperty("prevItemCount", chatLayout->count());
+    }
+}
+
+void AbstractChatPage::restoreChatScrollPosition() {
+    if (scrollArea && scrollArea->verticalScrollBar()) {
+        QTimer::singleShot(0, this, [this]() {
+            scrollArea->widget()->adjustSize(); // Force layout recalculation first
+            QScrollBar* bar = scrollArea->verticalScrollBar();
+
+            int prevItemCount = scrollArea->property("prevItemCount").toInt();
+            int newItemCount = chatLayout->count();
+            int prevMax = scrollArea->property("prevScrollMax").toInt();
+
+            bool wasAtBottom = (previousScrollPosition >= prevMax) && (prevMax > 0);
+
+            if (newItemCount > prevItemCount || prevItemCount <= 1 || wasAtBottom) {
+                bar->setValue(bar->maximum());
+            } else {
+                bar->setValue(previousScrollPosition);
+            }
+        });
+    }
+}
+void AbstractChatPage::scrollToBottom() {
+    if (scrollArea && scrollArea->verticalScrollBar()) {
+        scrollArea->verticalScrollBar()->setValue(scrollArea->verticalScrollBar()->maximum());
+    }
 }

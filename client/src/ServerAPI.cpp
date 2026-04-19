@@ -121,6 +121,39 @@ void ServerAPI::sendMessage(int groupId, const std::string& text, std::function<
     });
 }
 
+void ServerAPI::askAi(const std::string& text, const std::vector<int>& taskIds, std::function<void(bool, const std::string&)> callback) {
+    boost::json::array taskArray;
+    for (int id : taskIds) taskArray.push_back(id);
+
+    int userId = ClientState::getUser() ? ClientState::getUser()->getId() : -1;
+
+    boost::json::object payload = {
+        {"userId", userId},
+        {"text", text},
+        {"taskIds", taskArray}
+    };
+
+    network->sendRequest("askAi", payload, [callback](const boost::json::object& response) {
+        bool success = response.contains("status") && response.at("status").as_string() == "success";
+        std::string msg = response.contains("message") ? response.at("message").as_string().c_str() : "";
+        if (callback) callback(success, msg);
+    });
+}
+
+void ServerAPI::clearAiHistory(int userId, std::function<void(bool)> callback) {
+    boost::json::object payload = { {"userId", userId} };
+    network->sendRequest("clearAiHistory", payload, [callback](const boost::json::object& response) {
+        if (callback) callback(response.contains("status") && response.at("status").as_string() == "success");
+    });
+}
+
+void ServerAPI::cancelAi(int userId, std::function<void(bool)> callback) {
+    boost::json::object payload = { {"userId", userId} };
+    network->sendRequest("cancelAi", payload, [callback](const boost::json::object& response) {
+        if (callback) callback(response.contains("status") && response.at("status").as_string() == "success");
+    });
+}
+
 void ServerAPI::requestUsername(int userId, std::function<void(bool)> callback) {
     boost::json::object payload = { {"userId", userId} };
     network->sendRequest("getUsername", payload, [callback, userId](const boost::json::object& response) {

@@ -11,6 +11,7 @@
 #include "ui/ClientState.h"
 #include "ui/widget/CreateTaskDialog.h"
 #include "LanguageManager.h"
+#include "ui/SyntaxHighlighter.h"
 #include "ui/widget/NotificationsDialog.h"
 #include "ui/widget/ManageMembersDialog.h"
 
@@ -25,6 +26,7 @@ void MainWindow::loadStylesheet(QApplication &app) {
     }
 }
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
+    SyntaxHighlighter::init();
     setupUi();
     connectSignals();
 }
@@ -195,6 +197,24 @@ void MainWindow::connectSignals() {
         if (ClientState::getApi()) ClientState::getApi()->disconnect();
         qApp->exit(42); //leave the event loop when we logout
     });
+    auto openAiTutorWithTask = [this](int taskId) {
+        if (ClientState::getAiCredits() == -1) {
+            QMessageBox::warning(this, "AI Tutor", "AI is disabled on this server.");
+            return;
+        }
+
+        btnDashboard->setChecked(false);
+        btnFocus->setChecked(false);
+        btnGroups->setChecked(false);
+        btnAiTutor->setChecked(true);
+
+        stackedWidget->setCurrentIndex(3);
+        topbarTitle->setText(LanguageManager::tr("nav.ai_tutor"));
+
+        pageAiTutor->attachTask(taskId);
+    };
+
+    connect(pageTasks, &TasksPage::askAiRequested, this, openAiTutorWithTask);
     connect(ClientNotifier::instance(), &ClientNotifier::groupsChanged, this, &MainWindow::groupsChanged);
     connect(ClientNotifier::instance(), &ClientNotifier::tasksChanged, this, &MainWindow::tasksChanged);
     connect(createTaskBtn, &QPushButton::clicked, this, &MainWindow::openCreateTaskDialog);

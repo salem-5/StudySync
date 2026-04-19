@@ -1,5 +1,4 @@
 #pragma once
-#pragma once
 #include "TcpClient.h"
 #include <boost/json.hpp>
 #include <unordered_map>

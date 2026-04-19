@@ -114,5 +114,10 @@
   "chat.add_task": "+ Add Task",
   "chat.waiting": "Waiting for response...",
   "chat.generation_canceled": "Generation canceled by user.",
-  "ai.no_tasks": "No available tasks"
+  "ai.no_tasks": "No available tasks",
+  "chat.clear_history": "Clear History",
+  "chat.clear.title": "Clear Chat",
+  "chat.clear.prompt": "Are you sure you want to clear your AI chat history?",
+  "ai.out_of_credits": "Out of AI credits",
+  "ai.out_of_credits_msg": "You are out of AI credits."
 }

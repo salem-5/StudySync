@@ -151,18 +151,21 @@ private:
     std::vector<StudyGroup> pendingInvites;
     std::vector<Task> tasks;
     std::string sessionToken;
-
+    int aiCredits;
+    std::vector<AiMessage> aiMessages;
 public:
     LoginPayload(const User &user, const std::vector<StudyGroup> &studyGroups,
                  const std::vector<StudyGroup> &pendingInvites, const std::vector<Task> &tasks,
-                 const std::string &sessionToken = "");
+                 const std::string &sessionToken = "", int aiCredits = -1, const std::vector<AiMessage>& aiMessages = {});
+
 
     User getUser() const;
     std::vector<StudyGroup> getStudyGroups() const;
     std::vector<StudyGroup> getPendingInvites() const;
     std::vector<Task> getTasks() const;
     std::string getSessionToken() const;
-
+    int getAiCredits() const;
+    std::vector<AiMessage> getAiMessages() const;
     boost::json::object toJson() const;
     static LoginPayload fromJson(const boost::json::object& obj);
 };

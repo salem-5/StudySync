@@ -17,6 +17,12 @@ public:
     AbstractChatPage(QWidget* parent = nullptr);
     virtual ~AbstractChatPage() = default;
     void clearChat();
+
+    void refreshChatScrollPosition();
+    void restoreChatScrollPosition();
+
+    void scrollToBottom();
+
     void addMessage(const QString& senderName, const QString& text, bool isReceived, const QMap<int, QString>& attachments = QMap<int, QString>());
     void addAttachmentChip(int taskId, const QString& title);
     void clearAttachments();
@@ -30,7 +36,7 @@ protected:
     virtual void onCancelGeneration() {}
     bool eventFilter(QObject* obj, QEvent* event) override;
     void setInputEnabled(bool enabled);
-
+    int previousScrollPosition = 0xffffff;
     QVBoxLayout* mainLayout;
 
     QFrame* inputCard;
@@ -39,9 +45,10 @@ protected:
     QHBoxLayout* attachmentLayout;
     QPushButton* btnAddAttachment;
     QMap<int, QString> attachedTasks;
-
+    QPushButton* btnClearHistory;
     QLineEdit* chatInput;
     QPushButton* btnSend;
+    QScrollArea* scrollArea;
 
     virtual void onAddAttachmentClicked() {};
 
@@ -49,7 +56,6 @@ private:
     void setupUi();
     void onSendClicked();
 
-    QScrollArea* scrollArea;
     QWidget* chatContainer;
     QVBoxLayout* chatLayout;
 

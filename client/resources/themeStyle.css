@@ -5,6 +5,20 @@
  * SPDX-License-Identifier: MIT
  */
 
+QMenu#aiTutorMenu {
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+QMenu#aiTutorMenu::item {
+    padding: 5px 10px;
+}
+
+QMenu#aiTutorMenu::item:selected {
+    background-color: #f5f5f5;
+}
+
 QPushButton#closeBtn {
     background: transparent;
     border: none;

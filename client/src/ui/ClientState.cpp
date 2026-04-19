@@ -29,11 +29,28 @@ void ClientState::askAi(const std::string& text, const std::vector<int>& attache
         aiCredits--;
         emit ClientNotifier::instance()->userChanged();
     }
-    aiMessages.emplace_back("ai", "This is a simulated AI response.", std::vector<int>{});
-    emit ClientNotifier::instance()->aiResponseReceived(true, "This is a simulated AI response.");
+
+    if (apiInstance) {
+        apiInstance->askAi(text, attachedTaskIds, [](bool success, const std::string& msg) {
+            if (!success) {
+                emit ClientNotifier::instance()->aiResponseReceived(false, QString::fromStdString(msg));
+            }
+        });
+    }
 }
+
+void ClientState::clearAiHistory() {
+    if (apiInstance && currentUser) {
+        apiInstance->clearAiHistory(currentUser->getId(), [](bool) {});
+    }
+}
+
 void ClientState::cancelAi() {
+    if (apiInstance && currentUser) {
+        apiInstance->cancelAi(currentUser->getId(), [](bool) {});
+    }
 }
+
 const Task* ClientState::getTaskById(int id) {
     for (const auto& task : tasks) {
         if (task.getId() == id) {
@@ -99,7 +116,9 @@ void ClientState::loadFromPayload(const LoginPayload& payload) {
     pendingInvites = payload.getPendingInvites();
     tasks = payload.getTasks();
     sessionToken = payload.getSessionToken();
-
+    aiCredits = payload.getAiCredits();
+    auto msgs = payload.getAiMessages();
+    aiMessages = std::deque<AiMessage>(msgs.begin(), msgs.end());
     emit ClientNotifier::instance()->userChanged();
     emit ClientNotifier::instance()->groupsChanged();
     emit ClientNotifier::instance()->invitesChanged();
@@ -113,7 +132,8 @@ void ClientState::clear() {
     tasks.clear();
     usernameCache.clear();
     sessionToken = "";
-
+    aiCredits = -1;
+    aiMessages.clear();
     emit ClientNotifier::instance()->userChanged();
     emit ClientNotifier::instance()->groupsChanged();
     emit ClientNotifier::instance()->invitesChanged();

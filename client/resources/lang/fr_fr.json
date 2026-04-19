@@ -114,5 +114,10 @@
   "chat.add_task": "+ Ajouter une tâche",
   "chat.waiting": "En attente de réponse...",
   "chat.generation_canceled": "Génération annulée par l'utilisateur.",
-  "ai.no_tasks": "Aucune tâche disponible"
+  "ai.no_tasks": "Aucune tâche disponible",
+  "chat.clear_history": "Effacer l'historique",
+  "chat.clear.title": "Effacer le chat",
+  "chat.clear.prompt": "Êtes-vous sûr de vouloir effacer l'historique de votre chat IA ?",
+  "ai.out_of_credits": "Crédits IA épuisés",
+  "ai.out_of_credits_msg": "Vous n'avez plus de crédits IA."
 }

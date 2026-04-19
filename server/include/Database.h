@@ -1,3 +1,4 @@
+#pragma once
 #include <sqlite3.h>
 #include <string>
 #include <vector>
@@ -44,6 +45,14 @@ public:
 
     void createTemplateForUser(int userId);
     LoginPayload getFullUserData(int userId, const std::string& sessionToken);
+
+    void decrementAiCredits(int userId);
+    int getAiCredits(int userId);
+    void addAiMessage(int userId, const std::string& role, const std::string& text, const std::vector<int>& attachments);
+    std::vector<AiMessage> getAiMessages(int userId);
+    void clearAiMessages(int userId);
+    void replaceLastAiMessage(int userId, const std::string& newText);
+    void setAiCancellationFlag(int userId, bool flag);
 private:
     Database();
     ~Database();

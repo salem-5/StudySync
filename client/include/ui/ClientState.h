@@ -32,6 +32,7 @@ public:
     static int getAiCredits();
     static void setAiCredits(int credits);
     static void askAi(const std::string& text, const std::vector<int>& attachedTaskIds);
+    static void clearAiHistory();
     static void cancelAi();
     static const Task* getTaskById(int id);
     static std::unique_ptr<User> currentUser;
