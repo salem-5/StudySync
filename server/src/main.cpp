@@ -5,7 +5,7 @@
 #include "Database.h"
 #include "CmdParser.h"
 
-void registerServerRoutes();
+void registerServerRoutes(int port);
 void startAutoRefreshTimer(boost::asio::io_context& io_context);
 
 int main(int argc, char* argv[]) {
