@@ -43,7 +43,7 @@ void AiTutorPage::refreshMessages() {
         setInputEnabled(false);
         addMessage(LanguageManager::tr("nav.ai_tutor"), LanguageManager::tr("ai.out_of_credits_msg"), true);
     } else {
-        setInputEnabled(true);
+        setInputEnabled(!isWaitingForAi);
     }
 
     const auto& msgs = ClientState::getAiMessages();
@@ -64,6 +64,10 @@ void AiTutorPage::refreshMessages() {
         } else {
             addMessage(LanguageManager::tr("nav.ai_tutor"), QString::fromStdString(msg.getText()), true, attachmentsMap);
         }
+    }
+
+    if (isWaitingForAi) {
+        addLoadingMessage(LanguageManager::tr("nav.ai_tutor"));
     }
 
     restoreChatScrollPosition();

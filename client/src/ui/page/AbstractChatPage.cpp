@@ -327,28 +327,43 @@ void AbstractChatPage::addLoadingMessage(const QString& senderName) {
 }
 
 void AbstractChatPage::finishLoadingMessage(const QString& text, bool isError) {
-    if (!currentLoadingLabel) return;
+    if (!currentLoadingBubble) return;
 
     spinnerTimer->stop();
 
-    currentLoadingLabel->setText(text);
+    if (isError) {
+        if (currentLoadingLabel) {
+            currentLoadingLabel->setText(text);
+            currentLoadingLabel->setProperty("errorState", true);
+            currentLoadingLabel->style()->unpolish(currentLoadingLabel);
+            currentLoadingLabel->style()->polish(currentLoadingLabel);
+            currentLoadingLabel->setWordWrap(true);
+            currentLoadingLabel->setMaximumWidth(400);
+        }
 
-    currentLoadingLabel->setProperty("errorState", isError);
-    currentLoadingLabel->style()->unpolish(currentLoadingLabel);
-    currentLoadingLabel->style()->polish(currentLoadingLabel);
+        if (currentCancelBtn) {
+            currentCancelBtn->hide();
+            currentCancelBtn->deleteLater();
+            currentCancelBtn = nullptr;
+        }
 
-    currentLoadingLabel->setWordWrap(true);
-    currentLoadingLabel->setMaximumWidth(400);
+        currentLoadingLabel = nullptr;
+        currentLoadingBubble = nullptr;
+    } else {
+        QString senderName = "AI";
+        if (QLabel* nameLabel = currentLoadingBubble->findChild<QLabel*>("senderNameLabel")) {
+            senderName = nameLabel->text();
+        }
 
-    if (currentCancelBtn) {
-        currentCancelBtn->hide();
-        currentCancelBtn->deleteLater();
+        currentLoadingBubble->hide();
+        currentLoadingBubble->deleteLater();
+        currentLoadingBubble = nullptr;
+        currentLoadingLabel = nullptr;
         currentCancelBtn = nullptr;
+        addMessage(senderName, text, true);
     }
 
     setInputEnabled(true);
-    currentLoadingLabel = nullptr;
-    currentLoadingBubble = nullptr;
     chatInput->setFocus();
     QTimer::singleShot(0, this, [this]() {
         scrollArea->widget()->adjustSize();
@@ -370,7 +385,6 @@ void AbstractChatPage::onSendClicked() {
 }
 
 void AbstractChatPage::clearChat() {
-
     while (chatLayout->count() > 1) {
         QLayoutItem* item = chatLayout->takeAt(1);
         if (QWidget* widget = item->widget()) {
@@ -417,6 +431,7 @@ void AbstractChatPage::restoreChatScrollPosition() {
         });
     }
 }
+
 void AbstractChatPage::scrollToBottom() {
     if (scrollArea && scrollArea->verticalScrollBar()) {
         scrollArea->verticalScrollBar()->setValue(scrollArea->verticalScrollBar()->maximum());

@@ -1,1 +1,2 @@
-* Implement Ai Tutor on client and serverside, and some small fixes
+* Update client to prevent ai loading message from going away when a refresh occurs
+* Update ai backend to cycle through more models

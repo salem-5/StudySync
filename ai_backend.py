@@ -11,7 +11,6 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 from google.api_core.exceptions import ResourceExhausted
 
-# Load environment variables from the .env file
 load_dotenv()
 
 logging.basicConfig(
@@ -21,22 +20,19 @@ logging.basicConfig(
 
 logger = logging.getLogger("StudySync-AI")
 
-# Fetch API Key from environment variables
 API_KEY = os.getenv("GEMINI_API_KEY")
 if not API_KEY:
     logger.error("GEMINI_API_KEY is missing from the environment variables. Please check your .env file.")
     exit(1)
 
 genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel("gemini-2.5-flash")
 
-# Fetch HOST and PORT from environment variables, falling back to defaults if not found
 HOST = os.getenv("HOST", '127.0.0.1')
 PORT = int(os.getenv("PORT", 2570))
 
 MASTER_PROMPT = """
 You are the StudySync AI Tutor, a highly intelligent, encouraging, and helpful educational assistant built directly into the StudySync app.
-StudySync is a collaborative study planner and task management application for students.
+StudySync is a collaborative study planner and task management application for students. Dont use any markdown formatting except for codeblocks.
 
 Your role:
 1. Act as a supportive tutor. Explain concepts clearly and concisely.
@@ -45,6 +41,46 @@ Your role:
 4. ALWAYS wrap any code examples you provide inside standard markdown code blocks (for example: ```cpp ... ```), including the language alias for syntax highlighting.
 5. Do not hallucinate features about the app.
 """
+
+MODEL_PRIORITY = [
+    "gemini-3-flash",
+    "gemini-3.1-flash-lite",
+    "gemini-2.5-flash-lite",
+    "gemma-4-31b",
+    "gemma-4-26b",
+    "gemma-3-27b",
+    "gemma-3-12b",
+    "gemma-3-4b",
+    "gemma-3-2b",
+    "gemma-3-1b",
+]
+
+def try_models(full_prompt):
+    last_error = None
+
+    for name in MODEL_PRIORITY:
+        try:
+            logger.info(f"[MODEL TRY] {name}")
+
+            model = genai.GenerativeModel(name)
+            response = model.generate_content(full_prompt)
+
+            text = getattr(response, "text", None)
+            if not text:
+                raise ValueError("Empty response")
+
+            return text
+
+        except Exception as e:
+            logger.warning(f"[MODEL FAIL] {name}: {e}")
+            last_error = e
+            continue
+
+    if last_error:
+        raise last_error
+    else:
+        raise RuntimeError("All models failed unexpectedly.")
+
 
 def handle_client(conn, addr):
     logger.info(f"Connection established from {addr}")
@@ -116,13 +152,8 @@ def process_ai_request(conn, json_str, addr):
         logger.debug(f"[FULL PROMPT LENGTH] {len(full_prompt)}")
 
         ai_start = time.time()
-        response = model.generate_content(full_prompt)
+        text_response = try_models(full_prompt)
         ai_time = time.time() - ai_start
-
-        text_response = getattr(response, "text", None)
-
-        if not text_response:
-            raise ValueError("Gemini returned empty response")
 
         logger.info(f"[AI RESPONSE RECEIVED] in {ai_time:.2f}s")
         logger.debug(f"[AI OUTPUT] {text_response}")
@@ -149,7 +180,7 @@ def process_ai_request(conn, json_str, addr):
             "user_id": parsed.get("user_id", -1),
             "req_id": parsed.get("req_id", -1),
             "status": "success",
-            "message": f"Rate limit reached. Try again in {wait_time} seconds."
+            "message": f"Rate limit reached across all models. Try again in {wait_time} seconds."
         }
 
     except Exception as e:
