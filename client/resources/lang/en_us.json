@@ -119,5 +119,11 @@
   "chat.clear.title": "Clear Chat",
   "chat.clear.prompt": "Are you sure you want to clear your AI chat history?",
   "ai.out_of_credits": "Out of AI credits",
-  "ai.out_of_credits_msg": "You are out of AI credits."
+  "ai.out_of_credits_msg": "You are out of AI credits.",
+  "ai.disabled": "AI Disabled",
+  "ai.disabled_status": "AI: Disabled",
+  "ai.credits_count": "AI Credits: %1",
+  "ai.credits_loading": "AI Credits: Loading...",
+  "status.connecting": "Connecting...",
+  "ai.server_disabled_msg": "AI is disabled on this server."
 }

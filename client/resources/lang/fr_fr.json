@@ -119,5 +119,11 @@
   "chat.clear.title": "Effacer le chat",
   "chat.clear.prompt": "Êtes-vous sûr de vouloir effacer l'historique de votre chat IA ?",
   "ai.out_of_credits": "Crédits IA épuisés",
-  "ai.out_of_credits_msg": "Vous n'avez plus de crédits IA."
+  "ai.out_of_credits_msg": "Vous n'avez plus de crédits IA.",
+  "ai.disabled": "IA désactivée",
+  "ai.disabled_status": "IA : Désactivée",
+  "ai.credits_count": "Crédits IA : %1",
+  "ai.credits_loading": "Crédits IA : Chargement...",
+  "status.connecting": "Connexion en cours...",
+  "ai.server_disabled_msg": "L'IA est désactivée sur ce serveur."
 }

@@ -32,6 +32,10 @@ private:
     QLabel* topbarTitle;
     QLabel* lblAiCredits;
 
+    QTimer* connectionTimer;
+    int secondsSinceUpdate = 0;
+    QLabel* lblConnecting;
+
     QStackedWidget* stackedWidget;
     DashboardPage* pageDashboard;
     TasksPage* pageTasks;

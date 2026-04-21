@@ -1,2 +1,2 @@
-* Update client to prevent ai loading message from going away when a refresh occurs
-* Update ai backend to cycle through more models
+* Add ai credits label to topbar
+* make client log out when disconnected from server and add label for that

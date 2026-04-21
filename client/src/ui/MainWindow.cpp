@@ -43,9 +43,9 @@ void MainWindow::refreshAll() {
     }
     int credits = ClientState::getAiCredits();
     if (credits == -1) {
-        lblAiCredits->setText("AI Disabled");
+        lblAiCredits->setText(LanguageManager::tr("ai.disabled"));
     } else {
-        lblAiCredits->setText(QString("AI Credits: %1").arg(credits));
+        lblAiCredits->setText(LanguageManager::tr("ai.credits_count").arg(credits));
     }
 }
 
@@ -175,11 +175,17 @@ void MainWindow::setupTopbar() {
     titleFont.setBold(true);
     titleFont.setPointSize(12);
     topbarTitle->setFont(titleFont);
+
+    lblConnecting = new QLabel(LanguageManager::tr("status.connecting"), this);
+    lblConnecting->hide();
     lblAiCredits = new QLabel(this);
-    lblAiCredits->setStyleSheet("color: gray; font-weight: bold; margin-left: 10px;");
-    layout->addWidget(lblAiCredits);
+
     layout->addWidget(topbarTitle);
+    layout->addWidget(lblConnecting);
     layout->addStretch();
+    lblAiCredits = new QLabel(LanguageManager::tr("ai.credits_loading"), this);
+    layout->addWidget(lblAiCredits);
+
     createTaskBtn = new QPushButton(LanguageManager::tr("task.create"), this);
     layout->addWidget(createTaskBtn);
     QPushButton* btnNotifications = new QPushButton(LanguageManager::tr("nav.notifications"), this);
@@ -195,11 +201,11 @@ void MainWindow::setupTopbar() {
 void MainWindow::connectSignals() {
     connect(btnLogout, &QPushButton::clicked, this, [this]() {
         if (ClientState::getApi()) ClientState::getApi()->disconnect();
-        qApp->exit(42); //leave the event loop when we logout
+        qApp->exit(42);
     });
     auto openAiTutorWithTask = [this](int taskId) {
         if (ClientState::getAiCredits() == -1) {
-            QMessageBox::warning(this, "AI Tutor", "AI is disabled on this server.");
+            QMessageBox::warning(this, LanguageManager::tr("nav.ai_tutor"), LanguageManager::tr("ai.server_disabled_msg"));
             return;
         }
 
@@ -213,6 +219,31 @@ void MainWindow::connectSignals() {
 
         pageAiTutor->attachTask(taskId);
     };
+    connectionTimer = new QTimer(this);
+    connect(connectionTimer, &QTimer::timeout, this, [this]() {
+        secondsSinceUpdate++;
+        if (secondsSinceUpdate >= 16) {
+            if (ClientState::getApi()) ClientState::getApi()->disconnect();
+            qApp->exit(42);
+        } else if (secondsSinceUpdate >= 8) {
+            topbarTitle->hide();
+            lblConnecting->show();
+        }
+    });
+    connectionTimer->start(1000);
+    connect(ClientNotifier::instance(), &ClientNotifier::userChanged, this, [this]() {
+        secondsSinceUpdate = 0;
+        if (lblConnecting->isVisible()) {
+            lblConnecting->hide();
+            topbarTitle->show();
+        }
+        int credits = ClientState::getAiCredits();
+        if (credits == -1) {
+            lblAiCredits->setText(LanguageManager::tr("ai.disabled_status"));
+        } else {
+            lblAiCredits->setText(LanguageManager::tr("ai.credits_count").arg(credits));
+        }
+    });
 
     connect(pageTasks, &TasksPage::askAiRequested, this, openAiTutorWithTask);
     connect(ClientNotifier::instance(), &ClientNotifier::groupsChanged, this, &MainWindow::groupsChanged);
@@ -241,12 +272,6 @@ void MainWindow::connectSignals() {
     connect(pageGroups, &GroupsPage::groupsChanged, this, [this]() {
         emit groupsChanged();
         emit tasksChanged();
-    });
-    connect(btnAiTutor, &QPushButton::clicked, this, [this]() {
-        if (ClientState::getAiCredits() == -1) {
-            QMessageBox::warning(this, "AI Tutor", "AI is disabled on this server.");
-            btnAiTutor->setChecked(false);
-        }
     });
 }
 
