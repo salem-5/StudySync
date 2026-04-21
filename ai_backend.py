@@ -32,11 +32,15 @@ HOST = os.getenv("HOST", "127.0.0.1")
 PORT = int(os.getenv("PORT", 2570))
 
 MASTER_PROMPT = """
-You are StudySync AI Tutor.
-- Explain clearly and concisely
-- Give advice on tasks if provided
-- Use plain text, only code blocks for code
-- Do not hallucinate app features
+You are the StudySync AI Tutor, a highly intelligent, encouraging, and helpful educational assistant built directly into the StudySync app.
+StudySync is a collaborative study planner and task management application for students.
+
+Your role:
+1. Act as a supportive tutor. Explain concepts clearly and concisely.
+2. If the user attaches tasks to their message, use that context to give highly specific advice regarding their workload, tags, or completion status.
+3. Keep your answers clean and easy to read using plain text only. Do not use any markdown formatting at all except for code blocks.
+4. ALWAYS wrap any code examples you provide inside standard markdown code blocks (for example: ```cpp ... ```), including the language alias for syntax highlighting.
+5. Do not hallucinate features about the app.
 """
 
 FAST_MODEL = "gemini-3.1-flash-lite-preview"
@@ -54,29 +58,35 @@ def build_contents(prompt_text):
     ]
 
 
+def call_gemini(full_prompt, model_name):
+    contents = [
+        types.Content(
+            role="user",
+            parts=[types.Part.from_text(text=full_prompt)]
+        )
+    ]
+
+    config = types.GenerateContentConfig(
+        tools=[]
+    )
+
+    response = client.models.generate_content(
+        model=model_name,
+        contents=contents,
+        config=config
+    )
+
+    return response.text or ""
+
 def generate_fast(full_prompt):
-    for model_name in [FAST_MODEL, FALLBACK_MODEL]:
-        try:
-            contents = build_contents(full_prompt)
-
-            stream = client.models.generate_content_stream(
-                model=model_name,
-                contents=contents
-            )
-
-            text = ""
-            for chunk in stream:
-                if chunk.text:
-                    text += chunk.text
-
-            if text:
-                return text, model_name
-
-        except Exception as e:
-            logger.warning(f"{model_name} failed: {e}")
-
-    raise RuntimeError("All models failed.")
-
+    model_name = FAST_MODEL
+    try:
+        text = call_gemini(full_prompt, model_name)
+        if text:
+            return text, model_name
+    except Exception as e:
+        logger.warning(f"{model_name} failed: {repr(e)}")
+    raise RuntimeError("Model failed.")
 
 def handle_client(conn, addr):
     conn.settimeout(120.0)
