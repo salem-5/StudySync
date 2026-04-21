@@ -1,5 +1,6 @@
 ![Logo](client/resources/readme_logo.png)
 ![Showcase](client/resources/showcase.png)
+![Ai Tutor](client/resources/aiTutor.png)
 
 # StudySync
 [Visit Our Website!](http://studysync.site/)
