@@ -17,6 +17,7 @@ int main(int argc, char* argv[]) {
     LanguageManager::loadLanguage(langPath);
 
     QApplication app(argc, argv);
+    app.setWindowIcon(QIcon(":/icon.png"));
     MainWindow::loadStylesheet(app);
     QGuiApplication::styleHints()->setColorScheme(Qt::ColorScheme::Dark);
     int exitCode = 0;

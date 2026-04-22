@@ -1,4 +1,4 @@
-![Logo](client/resources/readme_logo.png)
+![Logo](client/resources/studysync_logo.png)
 ![Showcase](client/resources/showcase.png)
 ![Ai Tutor](client/resources/aiTutor.png)
 
@@ -54,7 +54,7 @@ The AI Tutor runs on a separate Python socket server that communicates with the 
 **Prerequisites:**
 You need Python installed along with the required libraries:
 ```bash
-pip install python-dotenv google-generativeai
+pip install python-dotenv google-genai
 ```
 
 **Configuration:**

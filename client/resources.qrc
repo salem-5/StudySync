@@ -1,6 +1,7 @@
 <!DOCTYPE RCC>
 <RCC version="1.0">
     <qresource prefix="/">
+        <file>resources/icon.png</file>
         <file>resources/syntax_rules.json</file>
         <file>resources/studysync_logo.png</file>
         <file>resources/lang/en_us.json</file>
