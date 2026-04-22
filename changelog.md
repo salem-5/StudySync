@@ -1,1 +1,1 @@
-* Update Icons and showcase images
+* Update Create Task and group Dialogs too look like their equivalent cards.

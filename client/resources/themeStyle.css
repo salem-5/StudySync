@@ -5,6 +5,71 @@
  * SPDX-License-Identifier: MIT
  */
 
+QLineEdit#seamlessGroupName {
+    background-color: transparent;
+    border: 1px dashed transparent;
+    color: #ffffff;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+QLineEdit#seamlessGroupName:hover {
+    background-color: rgba(255, 255, 255, 10);
+    border: 1px dashed rgba(255, 255, 255, 25);
+}
+
+QLineEdit#seamlessGroupName:focus {
+    background-color: rgba(255, 255, 255, 5);
+    border: 1px solid rgba(255, 255, 255, 15);
+    border-bottom: 2px solid #60cdff;
+}
+
+QLineEdit#seamlessTitle {
+    background-color: transparent;
+    border: 1px dashed transparent;
+    color: #ffffff;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+QLineEdit#seamlessTitle:hover {
+    background-color: rgba(255, 255, 255, 10);
+    border: 1px dashed rgba(255, 255, 255, 25);
+}
+
+QLineEdit#seamlessTitle:focus {
+    background-color: rgba(255, 255, 255, 5);
+    border: 1px solid rgba(255, 255, 255, 15);
+    border-bottom: 2px solid #60cdff;
+}
+
+QLineEdit#seamlessTag {
+    background-color: transparent;
+    border: 1px dashed transparent;
+    color: #aaaaaa;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+QLineEdit#seamlessTag:hover {
+    background-color: rgba(255, 255, 255, 10);
+    border: 1px dashed rgba(255, 255, 255, 25);
+    color: #ffffff;
+}
+
+QLineEdit#seamlessTag:focus {
+    background-color: rgba(255, 255, 255, 5);
+    border: 1px solid rgba(255, 255, 255, 15);
+    border-bottom: 2px solid #60cdff;
+    color: #ffffff;
+}
+
+CreateTaskDialog QComboBox {
+    min-height: 24px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+
 QMenu#aiTutorMenu {
     background-color: #ffffff;
     border: 1px solid #ddd;
