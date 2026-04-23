@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <QApplication>
+#include <QElapsedTimer>
 #include <QFile>
 #include <QScreen>
 #include <QComboBox>
@@ -361,5 +362,8 @@ void MainWindow::openCreateTaskDialog() {
 }
 
 void MainWindow::handleNewTask(Task task) {
+    if (task.getTitle().empty() || task.getGroupId() <= 0) {
+        return;
+    }
     ClientState::createTask(task.getGroupId(), task.getTitle(), task.getTag(), task.getAssignedToId());
 }

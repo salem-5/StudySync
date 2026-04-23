@@ -6,10 +6,10 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QFrame>
+#include <QVariant>
+#include <QFont>
 
-CreateTaskDialog::CreateTaskDialog(QWidget* parent)
-    : QDialog(parent) {
-
+CreateTaskDialog::CreateTaskDialog(QWidget* parent) : QDialog(parent) {
     setWindowTitle(LanguageManager::tr("task.create"));
     resize(450, 220);
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
@@ -75,10 +75,20 @@ CreateTaskDialog::CreateTaskDialog(QWidget* parent)
     cardLayout->addLayout(textLayout);
     mainLayout->addWidget(cardFrame);
 
-    QHBoxLayout* buttonLayout = new QHBoxLayout();
+    buttonLayout = new QHBoxLayout();
     buttonLayout->addStretch();
     btnCancel = new QPushButton(LanguageManager::tr("action.cancel"), this);
     btnCreate = new QPushButton(LanguageManager::tr("action.create"), this);
+
+    btnCreate->setEnabled(false);
+    auto validateForm = [this]() {
+        bool isTitleValid = !titleInput->text().trimmed().isEmpty();
+        bool isTagValid = !tagInput->text().trimmed().isEmpty();
+
+        btnCreate->setEnabled(isTitleValid && isTagValid);
+    };
+    connect(titleInput, &QLineEdit::textChanged, this, validateForm);
+    connect(tagInput, &QLineEdit::textChanged, this, validateForm);
 
     btnCreate->setDefault(true);
     btnCreate->setCursor(Qt::PointingHandCursor);
@@ -125,11 +135,11 @@ CreateTaskDialog::CreateTaskDialog(QWidget* parent)
     connect(ClientNotifier::instance(), &ClientNotifier::groupsChanged, this, refreshGroups);
     connect(ClientNotifier::instance(), &ClientNotifier::userChanged, this, updateAssignees);
 
-    connect(btnCreate, &QPushButton::clicked, this, &CreateTaskDialog::handleCreate);
+    connect(btnCreate, &QPushButton::clicked, this, &CreateTaskDialog::handleSubmit);
     connect(btnCancel, &QPushButton::clicked, this, &CreateTaskDialog::reject);
 }
 
-void CreateTaskDialog::handleCreate() {
+void CreateTaskDialog::handleSubmit() {
     int id = rand();
     Task task(
         id,

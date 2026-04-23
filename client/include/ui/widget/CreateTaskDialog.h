@@ -4,13 +4,13 @@
 #include <QComboBox>
 #include <QCheckBox>
 #include <QPushButton>
-#include <QFormLayout>
+#include <QHBoxLayout>
 #include "DataStructures.h"
 
 class CreateTaskDialog : public QDialog {
     Q_OBJECT
 
-private:
+protected:
     QLineEdit* titleInput;
     QLineEdit* tagInput;
     QComboBox* assigneeCombo;
@@ -19,13 +19,14 @@ private:
 
     QPushButton* btnCreate;
     QPushButton* btnCancel;
+    QHBoxLayout* buttonLayout;
 
 public:
     explicit CreateTaskDialog(QWidget* parent = nullptr);
 
-signals:
-    void taskCreated(Task task);
+    signals:
+        void taskCreated(Task task);
 
-private slots:
-    void handleCreate();
+protected slots:
+    virtual void handleSubmit();
 };

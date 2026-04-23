@@ -46,6 +46,12 @@ CreateGroupDialog::CreateGroupDialog(QWidget* parent) : QDialog(parent) {
     QHBoxLayout* btnLayout = new QHBoxLayout();
     btnCreate = new QPushButton(LanguageManager::tr("action.create"), this);
     btnCancel = new QPushButton(LanguageManager::tr("action.cancel"), this);
+    btnCreate->setEnabled(false);
+    auto validate = [this]() {
+        btnCreate->setEnabled(!nameInput->text().trimmed().isEmpty());
+    };
+
+    connect(nameInput, &QLineEdit::textChanged, this, validate);
 
     btnCreate->setDefault(true);
     btnCreate->setCursor(Qt::PointingHandCursor);
@@ -59,10 +65,8 @@ CreateGroupDialog::CreateGroupDialog(QWidget* parent) : QDialog(parent) {
 
     connect(btnCancel, &QPushButton::clicked, this, &QDialog::reject);
     connect(btnCreate, &QPushButton::clicked, this, [this]() {
-        if (!nameInput->text().trimmed().isEmpty()) {
-            ClientState::createGroup(nameInput->text().toStdString());
-            emit groupCreated();
-            accept();
-        }
+        ClientState::createGroup(nameInput->text().toStdString());
+        emit groupCreated();
+        accept();
     });
 }
