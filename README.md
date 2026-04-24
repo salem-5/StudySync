@@ -28,6 +28,7 @@ StudySync is a tool built to help students manage their workload and collaborate
 * **C++**
 * **SQLite**
 * **Python (AI Backend)**
+* NextJS (Website)
 
 ## Project Board
 Track progress and planned features here:  
