@@ -18,14 +18,16 @@ public:
     static pointer create(boost::asio::io_context& ioContext);
     tcp::socket& socket();
     void start();
-    void send(const std::string& message);
+    virtual void send(const std::string& message);
+
+    void handleMessage(const std::string& msg);
+
+protected:
+    TcpConnection(boost::asio::io_context& io_context);
 
 private:
-    TcpConnection(boost::asio::io_context& io_context); // Private so we use create()
-
     void doRead();
     void doWrite();
-    void handleMessage(const std::string& msg);
 
     tcp::socket socketObject;
     boost::asio::streambuf readBuffer;

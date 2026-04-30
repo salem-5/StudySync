@@ -1,17 +1,28 @@
-add_executable(test_studysync test_studysync.cpp)
-include(FetchContent)
+# Find dependencies
+find_package(GTest REQUIRED)
+find_package(Boost REQUIRED)
 
-FetchContent_Declare(
-        googletest
-        URL https://github.com/google/googletest/archive/refs/heads/main.zip
+file(GLOB_RECURSE SERVER_SRC_FILES "${CMAKE_SOURCE_DIR}/server/src/*.cpp")
+list(APPEND SERVER_SRC_FILES "${CMAKE_SOURCE_DIR}/server/src/sqlite/sqlite3.c")
+list(REMOVE_ITEM SERVER_SRC_FILES "${CMAKE_SOURCE_DIR}/server/src/main.cpp")
+file(GLOB_RECURSE TEST_FILES "*.cpp")
+add_executable(studysync_tests
+        ${SERVER_SRC_FILES}
+        ${TEST_FILES}
 )
 
-FetchContent_MakeAvailable(googletest)
-
-target_link_libraries(test_studysync
-    gtest
-    gtest_main
-    pthread
+target_link_libraries(studysync_tests PRIVATE
+        studysync_shared
+        GTest::gtest
+        GTest::gmock
+        GTest::gtest_main
 )
 
-add_test(NAME StudySyncTests COMMAND test_studysync)
+target_include_directories(studysync_tests PRIVATE
+        ${CMAKE_SOURCE_DIR}/server/include
+        ${CMAKE_SOURCE_DIR}/server/include/sqlite
+        ${Boost_INCLUDE_DIRS}
+)
+
+include(GoogleTest)
+gtest_discover_tests(studysync_tests)

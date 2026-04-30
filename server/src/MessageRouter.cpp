@@ -17,3 +17,7 @@ bool MessageRouter::handle(const std::string& cmd, const boost::json::object& re
     }
     return false;
 }
+
+void MessageRouter::clearRoutes() {
+    routes_.clear();
+}

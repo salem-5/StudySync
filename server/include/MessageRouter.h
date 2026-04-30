@@ -16,7 +16,7 @@ public:
     bool handle(const std::string& cmd,
                 const boost::json::object& request,
                 boost::json::object& response);
-
+    void clearRoutes();
 private:
     MessageRouter() = default;
 
