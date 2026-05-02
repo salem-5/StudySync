@@ -1,5 +1,5 @@
 # Find dependencies
-find_package(GTest REQUIRED)
+find_package(GTest REQUIRED CONFIG COMPONENTS gtest gmock)
 find_package(Boost REQUIRED)
 
 file(GLOB_RECURSE SERVER_SRC_FILES "${CMAKE_SOURCE_DIR}/server/src/*.cpp")
