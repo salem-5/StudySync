@@ -20,14 +20,10 @@ DashboardPage::DashboardPage(QWidget* parent) : QWidget(parent) {
     QGroupBox* welcomeGroup = new QGroupBox(LanguageManager::tr("dashboard.welcome"));
     QVBoxLayout* wLayout = new QVBoxLayout(welcomeGroup);
 
-    const User* user = ClientState::getUser();
-    QString username = user ? QString::fromStdString(user->getUsername()) : LanguageManager::tr("dashboard.student_placeholder");
-    QLabel* wSub = new QLabel(LanguageManager::tr("dashboard.welcome_back_prefix") + username + "!\n" + LanguageManager::tr("dashboard.welcome_back_suffix"));
-
-    QPushButton* wBtn = new QPushButton(LanguageManager::tr("dashboard.start_focus"));
-    connect(wBtn, &QPushButton::clicked, this, &DashboardPage::onStartFocusClicked);
-    wLayout->addWidget(wSub);
-    wLayout->addWidget(wBtn);
+    welcomeSubLabel = new QLabel();
+    welcomeBtn = new QPushButton();
+    wLayout->addWidget(welcomeSubLabel);
+    wLayout->addWidget(welcomeBtn);
 
     QGroupBox* tasksGroup = new QGroupBox(LanguageManager::tr("dashboard.tasks_due"));
     tasksLayout = new QVBoxLayout(tasksGroup);
@@ -53,11 +49,48 @@ DashboardPage::DashboardPage(QWidget* parent) : QWidget(parent) {
     connect(ClientNotifier::instance(), &ClientNotifier::tasksChanged, this, callback);
 }
 
+void DashboardPage::setFocusActive(bool active) {
+    isFocusActive = active;
+    refreshWelcomeCard();
+}
+
+void DashboardPage::refreshWelcomeCard() {
+    if (!welcomeSubLabel || !welcomeBtn) return;
+
+    const User* user = ClientState::getUser();
+    QString username = user ? QString::fromStdString(user->getUsername()) : LanguageManager::tr("dashboard.student_placeholder");
+    bool hasPending = false;
+    const std::vector<Task>& allTasks = ClientState::getTasks();
+    for (const Task& task : allTasks) {
+        if (!task.getIsCompleted() && (user == nullptr || task.getAssignedToId() == user->getId())) {
+            hasPending = true;
+            break;
+        }
+    }
+
+    QString prefix = LanguageManager::tr("dashboard.welcome_back_prefix") + " " + username + "!\n";
+    welcomeBtn->disconnect();
+
+    if (isFocusActive) {
+        welcomeSubLabel->setText(prefix + LanguageManager::tr("dashboard.ongoing_focus_suffix"));
+        welcomeBtn->setText(LanguageManager::tr("dashboard.goto_focus"));
+        connect(welcomeBtn, &QPushButton::clicked, this, &DashboardPage::gotoFocusRequested);
+    } else if (hasPending) {
+        welcomeSubLabel->setText(prefix + LanguageManager::tr("dashboard.welcome_back_suffix"));
+        welcomeBtn->setText(LanguageManager::tr("dashboard.start_focus"));
+        connect(welcomeBtn, &QPushButton::clicked, this, &DashboardPage::startFocusRequested);
+    } else {
+        welcomeSubLabel->setText(prefix + LanguageManager::tr("dashboard.no_tasks_suffix"));
+        welcomeBtn->setText(LanguageManager::tr("task.create"));
+        connect(welcomeBtn, &QPushButton::clicked, this, &DashboardPage::createTaskRequested);
+    }
+}
+
 void DashboardPage::refreshTaskCards() {
     QLayoutItem* item;
     while ((item = tasksLayout->takeAt(0)) != nullptr) {
         if (item->widget())
-            item->widget()->deleteLater(); //fix by chatgpt, to prevent deletion of object during qt event processing.
+            item->widget()->deleteLater();
         delete item;
     }
 
@@ -82,6 +115,7 @@ void DashboardPage::refreshTaskCards() {
     }
 
     tasksLayout->addStretch();
+    refreshWelcomeCard();
 }
 
 void DashboardPage::refreshPinnedGroups() {

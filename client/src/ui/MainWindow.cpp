@@ -274,6 +274,15 @@ void MainWindow::connectSignals() {
         emit groupsChanged();
         emit tasksChanged();
     });
+    connect(pageFocus, &FocusPage::focusStateChanged, pageDashboard, &DashboardPage::setFocusActive);
+    connect(pageDashboard, &DashboardPage::gotoFocusRequested, this, [this]() {
+        btnDashboard->setChecked(false);
+        btnFocus->setChecked(true);
+        pageFocus->refreshGroupList();
+        stackedWidget->setCurrentIndex(1);
+        topbarTitle->setText(LanguageManager::tr("nav.focus_session"));
+    });
+    connect(pageDashboard, &DashboardPage::createTaskRequested, this, &MainWindow::openCreateTaskDialog);
 }
 
 void MainWindow::switchPage() {

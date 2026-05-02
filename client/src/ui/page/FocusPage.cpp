@@ -86,6 +86,7 @@ void FocusPage::updateTimer() {
         timer->stop();
         updateButtons();
         pauseButton->setEnabled(false);
+        emit focusStateChanged(false);
         return;
     }
 
@@ -96,6 +97,7 @@ void FocusPage::updateTimer() {
         timer->stop();
         startButton->setEnabled(true);
         pauseButton->setEnabled(false);
+        emit focusStateChanged(false);
     }
 }
 
@@ -119,6 +121,7 @@ void FocusPage::startTimer() {
         timer->start(1000);
         startButton->setEnabled(false);
         pauseButton->setEnabled(true);
+        emit focusStateChanged(true);
     }
 }
 
@@ -127,6 +130,7 @@ void FocusPage::pauseTimer() {
         timer->stop();
         startButton->setEnabled(true);
         pauseButton->setEnabled(false);
+        emit focusStateChanged(false);
     }
 }
 
@@ -136,6 +140,7 @@ void FocusPage::resetTimer() {
     refreshTimerLabel();
     updateButtons();
     pauseButton->setEnabled(false);
+    emit focusStateChanged(false);
 }
 
 void FocusPage::startFocusTimer() {

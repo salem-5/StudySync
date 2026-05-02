@@ -42,4 +42,7 @@ private:
     QPushButton* resetButton;
     QComboBox* groupSelect;
     int remainingSeconds;
+
+signals:
+    void focusStateChanged(bool active);
 };

@@ -125,5 +125,8 @@
   "ai.credits_count": "Crédits IA : %1",
   "ai.credits_loading": "Crédits IA : Chargement...",
   "status.connecting": "Connexion en cours...",
-  "ai.server_disabled_msg": "L'IA est désactivée sur ce serveur."
+  "ai.server_disabled_msg": "L'IA est désactivée sur ce serveur.",
+  "dashboard.ongoing_focus_suffix": "Vous avez une session de concentration en cours.",
+  "dashboard.no_tasks_suffix": "Aucune tâche en attente. Créez une tâche pour commencer.",
+  "dashboard.goto_focus": "Aller à la session de concentration"
 }
