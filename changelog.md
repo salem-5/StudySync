@@ -1,2 +1,3 @@
-* Prevent Tasks from being created with no name or tag
-* Update Edit task dialog to match create task dialog
+* Add unit testing for backend and Database
+* add requirements.txt for python part
+* imrpvode Dashboardpage Welcome Card to include dynamic task suggestions
